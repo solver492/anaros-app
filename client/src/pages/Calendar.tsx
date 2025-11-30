@@ -599,6 +599,7 @@ export default function Calendar() {
     null
   );
   const [showAppointmentDetails, setShowAppointmentDetails] = useState(false);
+  const [searchStaff, setSearchStaff] = useState('');
   const { toast } = useToast();
 
   const { data: staff = [], isLoading: staffLoading } = useQuery<Profile[]>({
@@ -637,16 +638,22 @@ export default function Calendar() {
 
   const isLoading = staffLoading || clientsLoading || servicesLoading || appointmentsLoading;
 
+  // Filter staff by search
+  const filteredStaff = staff.filter(s =>
+    `${s.firstName} ${s.lastName}`.toLowerCase().includes(searchStaff.toLowerCase())
+  );
+
   // Transform staff to calendar resources
-  const resources: CalendarResource[] = staff.map((s) => ({
+  const resources: CalendarResource[] = filteredStaff.map((s) => ({
     id: s.id,
     title: `${s.firstName} ${s.lastName}`,
     colorCode: s.colorCode || '#3B82F6',
   }));
 
-  // Transform appointments to calendar events
+  // Transform appointments to calendar events (only for filtered staff)
+  const filteredStaffIds = new Set(filteredStaff.map(s => s.id));
   const events: CalendarEvent[] = appointments
-    .filter((a) => a.status !== 'cancelled')
+    .filter((a) => a.status !== 'cancelled' && filteredStaffIds.has(a.staffId))
     .map((a) => ({
       id: a.id,
       title: `${a.client.fullName} - ${a.service.name}`,
@@ -689,11 +696,18 @@ export default function Calendar() {
   return (
     <Layout title="Agenda">
       <div className="p-4 lg:p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <p className="text-muted-foreground">
-              {staff.length} employé(e)s • {appointments.filter((a) => a.status !== 'cancelled').length} RDV aujourd'hui
+        <div className="flex items-center justify-between gap-4 mb-4">
+          <div className="flex-1">
+            <p className="text-muted-foreground text-sm mb-3">
+              {filteredStaff.length}/{staff.length} employé(e)s • {appointments.filter((a) => a.status !== 'cancelled' && filteredStaffIds.has(a.staffId)).length} RDV
             </p>
+            <Input
+              placeholder="Rechercher un(e) employé(e)..."
+              value={searchStaff}
+              onChange={(e) => setSearchStaff(e.target.value)}
+              data-testid="input-search-staff"
+              className="max-w-sm"
+            />
           </div>
           <Button onClick={() => setShowNewAppointment(true)} data-testid="button-new-appointment">
             <Plus className="mr-2 h-4 w-4" />
