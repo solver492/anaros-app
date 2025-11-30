@@ -59,6 +59,8 @@ function AppointmentModal({
   const [selectedService, setSelectedService] = useState<string>('');
   const [selectedStaff, setSelectedStaff] = useState<string>('');
   const [clientSearch, setClientSearch] = useState('');
+  const [appointmentDate, setAppointmentDate] = useState<string>('');
+  const [appointmentTime, setAppointmentTime] = useState<string>('09:00');
   const { toast } = useToast();
 
   // Get staff skills from the API
@@ -80,8 +82,20 @@ function AppointmentModal({
       setSelectedService('');
       setSelectedStaff('');
       setClientSearch('');
+      setAppointmentDate('');
+      setAppointmentTime('09:00');
     }
   }, [open]);
+
+  // Initialize date when slot is selected
+  useEffect(() => {
+    if (selectedSlot?.start) {
+      const date = selectedSlot.start.toISOString().split('T')[0];
+      const time = selectedSlot.start.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', ':');
+      setAppointmentDate(date);
+      setAppointmentTime(selectedSlot.start.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }));
+    }
+  }, [selectedSlot?.start]);
 
   const createAppointment = useMutation({
     mutationFn: async (data: InsertAppointment) => {
@@ -118,12 +132,16 @@ function AppointmentModal({
     : staff;
 
   const handleSubmit = () => {
-    if (!selectedSlot || !selectedClient || !selectedService || !selectedStaff) return;
+    if (!selectedClient || !selectedService || !selectedStaff || !appointmentDate || !appointmentTime) return;
 
     const service = services.find((s) => s.id === selectedService);
     if (!service) return;
 
-    const startTime = selectedSlot.start;
+    // Parse date and time
+    const [hours, minutes] = appointmentTime.split(':').map(Number);
+    const startTime = new Date(appointmentDate);
+    startTime.setHours(hours, minutes, 0);
+    
     const endTime = new Date(startTime.getTime() + service.duration * 60000);
 
     createAppointment.mutate({
@@ -161,7 +179,7 @@ function AppointmentModal({
 
         {/* Step indicators */}
         <div className="flex items-center gap-2 py-4">
-          {[1, 2, 3].map((s) => (
+          {[1, 2, 3, 4].map((s) => (
             <div key={s} className="flex items-center flex-1">
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
@@ -172,7 +190,7 @@ function AppointmentModal({
               >
                 {s}
               </div>
-              {s < 3 && (
+              {s < 4 && (
                 <div
                   className={`flex-1 h-1 mx-2 rounded ${
                     step > s ? 'bg-primary' : 'bg-muted'
@@ -183,8 +201,34 @@ function AppointmentModal({
           ))}
         </div>
 
-        {/* Step 1: Select Client */}
+        {/* Step 1: Select Date & Time */}
         {step === 1 && (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="appointment-date">Date du rendez-vous</Label>
+              <Input
+                id="appointment-date"
+                type="date"
+                value={appointmentDate}
+                onChange={(e) => setAppointmentDate(e.target.value)}
+                data-testid="input-appointment-date"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="appointment-time">Heure du rendez-vous</Label>
+              <Input
+                id="appointment-time"
+                type="time"
+                value={appointmentTime}
+                onChange={(e) => setAppointmentTime(e.target.value)}
+                data-testid="input-appointment-time"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: Select Client */}
+        {step === 2 && (
           <div className="space-y-4">
             <Label>Rechercher un client</Label>
             <Input
@@ -234,8 +278,8 @@ function AppointmentModal({
           </div>
         )}
 
-        {/* Step 2: Select Service */}
-        {step === 2 && (
+        {/* Step 3: Select Service */}
+        {step === 3 && (
           <div className="space-y-4">
             <Label>Choisir une prestation</Label>
             <div className="max-h-60 overflow-auto space-y-2">
@@ -273,8 +317,8 @@ function AppointmentModal({
           </div>
         )}
 
-        {/* Step 3: Select Staff */}
-        {step === 3 && (
+        {/* Step 4: Select Staff */}
+        {step === 4 && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <Label>Choisir un(e) employé(e)</Label>
@@ -332,7 +376,7 @@ function AppointmentModal({
         )}
 
         {/* Summary before submit */}
-        {step === 3 && selectedClient && selectedService && selectedStaff && (
+        {step === 4 && selectedClient && selectedService && selectedStaff && (
           <Card className="mt-4 bg-muted/50">
             <CardContent className="pt-4">
               <div className="grid grid-cols-3 gap-4 text-sm">
@@ -361,18 +405,20 @@ function AppointmentModal({
               Retour
             </Button>
           )}
-          {step < 3 && (
+          {step < 4 && (
             <Button
               onClick={() => setStep(step + 1)}
               disabled={
-                (step === 1 && !selectedClient) || (step === 2 && !selectedService)
+                (step === 1 && (!appointmentDate || !appointmentTime)) || 
+                (step === 2 && !selectedClient) || 
+                (step === 3 && !selectedService)
               }
               data-testid="button-next-step"
             >
               Suivant
             </Button>
           )}
-          {step === 3 && (
+          {step === 4 && (
             <Button
               onClick={handleSubmit}
               disabled={!selectedStaff || createAppointment.isPending}
@@ -553,6 +599,7 @@ export default function Calendar() {
     null
   );
   const [showAppointmentDetails, setShowAppointmentDetails] = useState(false);
+  const [filteredStaffIds, setFilteredStaffIds] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   const { data: staff = [], isLoading: staffLoading } = useQuery<Profile[]>({
@@ -591,12 +638,25 @@ export default function Calendar() {
 
   const isLoading = staffLoading || clientsLoading || servicesLoading || appointmentsLoading;
 
+  // Get filtered staff or all if no filter
+  const displayedStaff = filteredStaffIds.size === 0 ? staff : staff.filter(s => filteredStaffIds.has(s.id));
+
   // Transform staff to calendar resources
-  const resources: CalendarResource[] = staff.map((s) => ({
+  const resources: CalendarResource[] = displayedStaff.map((s) => ({
     id: s.id,
     title: `${s.firstName} ${s.lastName}`,
     colorCode: s.colorCode || '#3B82F6',
   }));
+
+  const toggleStaffFilter = (staffId: string) => {
+    const newFiltered = new Set(filteredStaffIds);
+    if (newFiltered.has(staffId)) {
+      newFiltered.delete(staffId);
+    } else {
+      newFiltered.add(staffId);
+    }
+    setFilteredStaffIds(newFiltered);
+  };
 
   // Transform appointments to calendar events
   const events: CalendarEvent[] = appointments
@@ -643,16 +703,35 @@ export default function Calendar() {
   return (
     <Layout title="Agenda">
       <div className="p-4 lg:p-6">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4">
           <div>
             <p className="text-muted-foreground">
-              {staff.length} employé(e)s • {appointments.filter((a) => a.status !== 'cancelled').length} RDV aujourd'hui
+              {displayedStaff.length} employé(e)s • {appointments.filter((a) => a.status !== 'cancelled').length} RDV
             </p>
           </div>
           <Button onClick={() => setShowNewAppointment(true)} data-testid="button-new-appointment">
             <Plus className="mr-2 h-4 w-4" />
             Nouveau RDV
           </Button>
+        </div>
+
+        {/* Staff Filter */}
+        <div className="mb-6 flex flex-wrap gap-2">
+          <span className="text-sm font-medium text-muted-foreground self-center">Filtrer par employé(e):</span>
+          <div className="flex flex-wrap gap-2">
+            {staff.map((member) => (
+              <Badge
+                key={member.id}
+                variant={filteredStaffIds.has(member.id) ? 'default' : 'outline'}
+                className="cursor-pointer hover-elevate"
+                onClick={() => toggleStaffFilter(member.id)}
+                data-testid={`badge-filter-staff-${member.id}`}
+                style={filteredStaffIds.has(member.id) ? { backgroundColor: member.colorCode } : undefined}
+              >
+                {member.firstName} {member.lastName}
+              </Badge>
+            ))}
+          </div>
         </div>
 
         <Card className="border-card-border overflow-hidden">
