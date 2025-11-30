@@ -1,0 +1,388 @@
+# 🚀 Guide Complet : Générer l'Application Anaros ERP sur Replit
+
+## ⚠️ IMPORTANT : Comment utiliser ce guide
+
+Replit ne peut pas générer automatiquement une application complète, MAIS vous pouvez utiliser **Replit AI** pour créer l'application progressivement. Voici comment procéder :
+
+---
+
+## 📋 ÉTAPE 1 : Créer le Projet sur Replit
+
+1. Allez sur [replit.com](https://replit.com)
+2. Cliquez sur **"+ Create Repl"**
+3. Sélectionnez **"React + Vite"** comme template
+4. Nommez le projet : `anaros-erp`
+5. Cliquez sur **Create Repl**
+
+---
+
+## 🤖 ÉTAPE 2 : Utiliser Replit AI (Agent)
+
+Une fois le projet créé, utilisez l'assistant IA de Replit en lui donnant ces prompts **dans l'ordre** :
+
+### Prompt 1 : Configuration Initiale
+```
+Installe et configure un projet React + TypeScript + Vite avec les dépendances suivantes :
+- @supabase/supabase-js (client Supabase)
+- @tanstack/react-query (gestion d'état)
+- react-router-dom (routing)
+- @fullcalendar/react, @fullcalendar/resource-timegrid, @fullcalendar/interaction
+- lucide-react (icônes)
+- shadcn/ui (composants UI)
+- tailwindcss (styling)
+
+Configure aussi TypeScript, Tailwind CSS et crée la structure de dossiers suivante :
+/src
+  /components
+    /dashboard
+    /calendar
+    /clients
+    /users
+    /services
+  /lib
+  /hooks
+  /types
+  /pages
+```
+
+### Prompt 2 : Configuration Supabase
+```
+Crée un fichier src/lib/supabase.ts qui initialise le client Supabase avec les variables d'environnement VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY.
+
+Crée aussi un fichier .env.example avec ces variables.
+```
+
+### Prompt 3 : Types TypeScript
+```
+Crée un fichier src/types/database.ts avec les types TypeScript suivants basés sur notre schéma Supabase :
+
+- Profile (id, first_name, last_name, role: 'superadmin' | 'admin' | 'reception' | 'staff', color_code)
+- ServiceCategory (id, name)
+- Service (id, category_id, name, price en DA, duration en minutes)
+- StaffSkill (profile_id, category_id)
+- Client (id, full_name, phone, notes)
+- Appointment (id, created_at, start_time, end_time, client_id, staff_id, service_id, status: 'pending' | 'confirmed' | 'completed' | 'cancelled')
+```
+
+### Prompt 4 : Système d'Authentification
+```
+Crée un système d'authentification avec Supabase Auth :
+- Page de login (src/pages/Login.tsx)
+- Contexte d'authentification (src/contexts/AuthContext.tsx)
+- Hook useAuth pour accéder au user et logout
+- Route protégée qui redirige vers /login si non authentifié
+```
+
+### Prompt 5 : Layout Principal
+```
+Crée un layout principal (src/components/Layout.tsx) avec :
+- Sidebar avec navigation (Dashboard, Agenda, Clients, Services, Utilisateurs)
+- Affichage conditionnel des menus selon le rôle (voir tableau des permissions)
+- Header avec nom de l'utilisateur et bouton logout
+- Responsive (mobile-first)
+```
+
+### Prompt 6 : Module Dashboard (Admin)
+```
+Crée une page Dashboard (src/pages/Dashboard.tsx) qui affiche :
+- KPI Cards : CA du jour/mois/année, nombre de RDV
+- Tableau "Top Employés" (basé sur le CA généré)
+- Tableau "Top Prestations" (services les plus vendus)
+- Card "Client Doré" (client ayant le plus dépensé ce mois)
+
+Utilise React Query pour fetcher les données depuis Supabase.
+```
+
+### Prompt 7 : Module Gestion Utilisateurs
+```
+Crée une page Users (src/pages/Users.tsx) accessible uniquement aux admins avec :
+- Liste des employés avec avatar, nom, rôle, couleur
+- Bouton "Ajouter un employé"
+- Modal de création/édition avec formulaire (nom, prénom, email, mot de passe, rôle, couleur)
+- Section "Compétences" : checkboxes pour assigner les catégories de services maîtrisées
+- Bouton supprimer avec confirmation
+```
+
+### Prompt 8 : Module Clients
+```
+Crée une page Clients (src/pages/Clients.tsx) avec :
+- Barre de recherche (par nom ou téléphone)
+- Liste des clients en cards
+- Bouton "Nouveau client"
+- Modal avec formulaire (nom complet, téléphone, email optionnel, notes)
+- Vue détail client : historique des RDV + total dépensé
+```
+
+### Prompt 9 : Module Services/Prestations
+```
+Crée une page Services (src/pages/Services.tsx) avec :
+- Liste groupée par catégorie (Coiffure, Hammam, Massage, etc.)
+- CRUD complet : Ajouter, Modifier, Supprimer
+- Formulaire avec : Catégorie, Nom, Prix (DA), Durée (minutes)
+```
+
+### Prompt 10 : Module Agenda - Vue Réception
+```
+Crée une page Calendar (src/pages/Calendar.tsx) avec FullCalendar en mode "resourceTimeGrid" :
+- Les employés sont affichés en colonnes horizontales
+- Chaque employé a sa couleur (depuis profile.color_code)
+- Heures de 9h à 20h
+- Créer un RDV :
+  1. Clic sur un créneau
+  2. Modal : Sélection Client (autocomplete), Sélection Service
+  3. LOGIQUE CLÉE : Filtrer et ne montrer QUE les colonnes des employés compétents pour ce service (utiliser staff_skills)
+  4. Validation et création
+- Afficher les détails au clic sur un événement
+```
+
+### Prompt 11 : Module Agenda - Vue Employé (Mobile)
+```
+Crée une page MySchedule (src/pages/MySchedule.tsx) pour les employés :
+- Vue liste de LEUR journée uniquement (filtré par staff_id)
+- Affiche : Heure, Nom du client, Prestation
+- Design mobile-first avec grandes cards tactiles
+```
+
+### Prompt 12 : Système de Notifications
+```
+Crée un système de notifications in-app :
+- Composant Toast (src/components/Notifications.tsx)
+- Hook useNotifications qui check les RDV à venir dans 10 min
+- Polling toutes les 5 minutes ou utilisation de Supabase Realtime
+```
+
+---
+
+## 🗄️ ÉTAPE 3 : Configuration Supabase
+
+### A. Créer le projet Supabase
+1. Allez sur [supabase.com](https://supabase.com)
+2. Créez un nouveau projet : `anaros-erp`
+3. Notez l'URL et la clé ANON KEY
+
+### B. Exécuter le script SQL
+Allez dans **SQL Editor** et exécutez ce script :
+
+```sql
+-- Table des profils utilisateurs (extension de auth.users)
+CREATE TABLE profiles (
+  id UUID REFERENCES auth.users PRIMARY KEY,
+  first_name TEXT NOT NULL,
+  last_name TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('superadmin', 'admin', 'reception', 'staff')),
+  color_code TEXT DEFAULT '#3B82F6',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Table des catégories de services
+CREATE TABLE services_categories (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE
+);
+
+-- Table des services (catalogue)
+CREATE TABLE services (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  category_id INTEGER REFERENCES services_categories(id),
+  name TEXT NOT NULL,
+  price INTEGER NOT NULL, -- Prix en DA
+  duration INTEGER NOT NULL, -- Durée en minutes
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Table des compétences staff (qui sait faire quoi)
+CREATE TABLE staff_skills (
+  profile_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  category_id INTEGER REFERENCES services_categories(id) ON DELETE CASCADE,
+  PRIMARY KEY (profile_id, category_id)
+);
+
+-- Table des clients
+CREATE TABLE clients (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  full_name TEXT NOT NULL,
+  phone TEXT NOT NULL,
+  email TEXT,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX idx_clients_phone ON clients(phone);
+
+-- Table des rendez-vous
+CREATE TABLE appointments (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  start_time TIMESTAMPTZ NOT NULL,
+  end_time TIMESTAMPTZ NOT NULL,
+  client_id UUID REFERENCES clients(id),
+  staff_id UUID REFERENCES profiles(id),
+  service_id UUID REFERENCES services(id),
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'completed', 'cancelled'))
+);
+
+-- Index pour optimiser les requêtes
+CREATE INDEX idx_appointments_start_time ON appointments(start_time);
+CREATE INDEX idx_appointments_staff_id ON appointments(staff_id);
+
+-- RLS Policies (Sécurité)
+
+-- Profiles
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Profiles visibles par tous les authentifiés" ON profiles FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Admins peuvent tout gérer" ON profiles FOR ALL USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('superadmin', 'admin'))
+);
+
+-- Services
+ALTER TABLE services ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Services visibles par tous" ON services FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Admins gèrent services" ON services FOR ALL USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('superadmin', 'admin'))
+);
+
+-- Clients
+ALTER TABLE clients ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Clients visibles par admins et réception" ON clients FOR SELECT USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('superadmin', 'admin', 'reception'))
+);
+CREATE POLICY "Admins et réception gèrent clients" ON clients FOR ALL USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('superadmin', 'admin', 'reception'))
+);
+
+-- Appointments
+ALTER TABLE appointments ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Staff voit ses propres RDV" ON appointments FOR SELECT USING (
+  staff_id = auth.uid() OR 
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('superadmin', 'admin', 'reception'))
+);
+CREATE POLICY "Admins et réception gèrent RDV" ON appointments FOR ALL USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('superadmin', 'admin', 'reception'))
+);
+```
+
+### C. Insérer les données initiales
+
+```sql
+-- Catégories de services
+INSERT INTO services_categories (name) VALUES 
+('Onglerie'), ('Massage'), ('Hammam'), ('Coiffure'), 
+('Maquillage'), ('Soins Visage'), ('Épilation');
+
+-- Exemples de services (à compléter selon vos menus)
+INSERT INTO services (category_id, name, price, duration) VALUES
+(4, 'Brushing Cheveux Courts', 1000, 30),
+(4, 'Brushing Cheveux Mi-longs', 1500, 45),
+(4, 'Botox Capillaire', 15000, 120),
+(4, 'Balayage Cheveux Courts', 15000, 180),
+(3, 'Rituel Traditionnel', 2800, 90),
+(3, 'Rituel Royal', 3800, 120),
+(3, 'Rituel Sultana', 7000, 150),
+(1, 'Vernis Semi-Permanent Mains', 3000, 60),
+(1, 'Gel Mains', 3500, 75),
+(1, 'Pédicure Thuya', 4500, 90),
+(2, 'Massage Anti-Stress', 6500, 60),
+(2, 'Massage Relaxant', 5000, 60),
+(2, 'Madérothérapie', 10000, 90),
+(6, 'Soin Marin aux 3 Algues', 6000, 60),
+(6, 'Hydrafacial Hydraskin Coréen', 15000, 75);
+```
+
+### D. Créer le premier utilisateur Admin
+1. Allez dans **Authentication** > **Users**
+2. Cliquez **Add user** > **Create new user**
+3. Email : `admin@anaros.com`
+4. Mot de passe : `AdminAnaros2025!`
+5. Confirmez
+
+Puis dans **SQL Editor** :
+```sql
+INSERT INTO profiles (id, first_name, last_name, role, color_code)
+VALUES (
+  (SELECT id FROM auth.users WHERE email = 'admin@anaros.com'),
+  'Admin',
+  'Anaros',
+  'superadmin',
+  '#FF6B6B'
+);
+```
+
+---
+
+## 🔑 ÉTAPE 4 : Configuration des Variables d'Environnement
+
+Dans Replit, allez dans **Secrets** (icône cadenas) et ajoutez :
+- `VITE_SUPABASE_URL` : Votre URL Supabase
+- `VITE_SUPABASE_ANON_KEY` : Votre clé anonyme
+
+---
+
+## 🎨 ÉTAPE 5 : Personnalisation Finale
+
+Demandez à Replit AI :
+```
+Améliore le design avec :
+- Palette de couleurs élégante (rose poudré + doré pour un centre de beauté)
+- Animations fluides (framer-motion)
+- Loading skeletons pendant les chargements
+- Messages de confirmation (toasts)
+- Responsive parfait mobile/tablet/desktop
+```
+
+---
+
+## 🚀 ÉTAPE 6 : Lancement
+
+Dans le terminal Replit :
+```bash
+npm install
+npm run dev
+```
+
+Votre application sera accessible à l'URL fournie par Replit !
+
+---
+
+## 📱 BONUS : Transformer en PWA
+
+Demandez à Replit AI :
+```
+Transforme l'application en PWA (Progressive Web App) pour que les employés puissent l'installer sur leur téléphone :
+- Ajoute un manifest.json
+- Configure le service worker pour le mode offline
+- Icônes de l'app
+```
+
+---
+
+## 🆘 En Cas de Problème
+
+Si Replit AI ne génère pas bien une partie, vous pouvez :
+1. Reformuler le prompt avec plus de détails
+2. Lui demander de corriger l'erreur spécifique
+3. Me recontacter avec la capture d'écran de l'erreur
+
+---
+
+## ✅ Checklist de Validation
+
+- [ ] Projet créé sur Replit avec React + Vite
+- [ ] Toutes les dépendances installées
+- [ ] Supabase configuré et tables créées
+- [ ] Variables d'environnement ajoutées
+- [ ] Premier admin créé et peut se connecter
+- [ ] Dashboard affiche les KPIs
+- [ ] Agenda avec FullCalendar fonctionne
+- [ ] Filtrage intelligent des employés compétents
+- [ ] Vue mobile pour les employés
+- [ ] Système de notifications actif
+
+---
+
+## 📞 Support
+
+En cas de blocage, n'hésitez pas à me recontacter avec :
+- La capture d'écran de l'erreur
+- Le message d'erreur complet
+- L'étape où vous êtes bloqué
+
+Bonne chance pour votre projet Anaros ! 💅✨

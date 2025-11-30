@@ -1,0 +1,184 @@
+# 📱 Spécifications Techniques : Plateforme de Gestion Anaros
+
+**Projet :** ERP & CRM Centre de Beauté Anaros  
+**Agence :** DigitalSolverLand  
+**Version :** 1.0  
+**Date :** 30 Novembre 2025  
+
+---
+
+## 1. 🎯 Objectif du Projet
+Développer une Single Page Application (SPA) centralisée pour la gestion intégrale du centre de beauté **Anaros**. La solution doit gérer la prise de rendez-vous intelligente, le suivi des employés, la base de données clients et fournir des statistiques financières détaillées, avec une gestion stricte des permissions via **Supabase**.
+
+---
+
+## 2. 🏗 Architecture & Stack Technique
+
+### Backend (Serverless)
+* **Plateforme :** [Supabase](https://supabase.com)
+* **Base de données :** PostgreSQL.
+* **Authentification :** Supabase Auth (Email/Password).
+* **Sécurité :** Row Level Security (RLS) pour le cloisonnement des données.
+* **Notifications :** Supabase Edge Functions + pg_cron (Check toutes les 5 min).
+* **Stockage :** Supabase Storage (Avatars employés, photos prestations si nécessaire).
+
+### Frontend
+* **Framework :** React.js + Vite.
+* **Langage :** TypeScript (Recommandé pour la robustesse).
+* **Styling :** Tailwind CSS + Shadcn/UI (Composants modernes et accessibles).
+* **Calendrier :** FullCalendar (Librairie React) - Module "Resource TimeGrid".
+* **Gestion d'état :** TanStack Query (React Query) pour la synchro avec Supabase.
+
+---
+
+## 3. 👥 Gestion des Rôles (RBAC)
+
+La sécurité est gérée via les **Policies RLS** de Supabase.
+
+| Rôle | Accès Dashboard | Gestion Utilisateurs | Gestion Clients | Agenda Central (Vue Globale) | Agenda Perso | Configuration Prestations |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Super Admin** | ✅ Complet | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Admin** | ✅ Complet | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Réceptionniste** (Amina) | ❌ | ❌ | ✅ (Création/Modif) | ✅ (Lecture/Écriture) | ❌ | ❌ |
+| **Employé** (Staff) | ❌ | ❌ | ❌ | ❌ | ✅ (Lecture Seule) | ❌ |
+
+---
+
+## 4. 📦 Modules Fonctionnels
+
+### 4.1 📊 Module Dashboard (Admin Only)
+* **Objectif :** Vue d'ensemble de la santé du business.
+* **KPIs à afficher :**
+    * Chiffre d'Affaires (Jour / Mois / Année).
+    * Nombre de RDV honorés vs Annulés.
+* **Classement Employés :** "Qui a le mieux travaillé ?" (Basé sur le total en DA des prestations réalisées).
+* **Top Prestations :** Les services les plus vendus (ex: "Rituel Royal" vs "Brushing").
+* **Client Doré (Golden Client) :** Le client ayant généré le plus de CA sur le mois en cours.
+
+### 4.2 🛠 Module Utilisateurs & RH (Admin Only)
+Interface pour ajouter/supprimer des comptes.
+* **Champs :** Nom, Prénom, Email, Mot de passe, Rôle, Couleur (pour l'agenda).
+* **Assignation des Compétences :** Indispensable pour l'agenda intelligent.
+    * *Exemple :* `Samira` -> Taguée "Massage". `Houda` -> Taguée "Coiffure".
+
+### 4.3 📅 Module Agenda (Cœur du système)
+Utilisation de **FullCalendar** avec deux vues distinctes :
+
+**A. Vue "Réception" (Agenda Central) :**
+* Vue "Ressources Horizontale" : Les employés sont en colonnes, les heures en lignes.
+* **Logique de Création de RDV :**
+    1.  Sélection du Client (Recherche auto-complétion).
+    2.  Sélection de la Prestation (ex: "Maderothérapie").
+    3.  **Filtrage Intelligent :** Le système ne dégrise QUE les colonnes des employés compétents (ex: Saliha, Amel) et masque les coiffeuses.
+    4.  Validation du créneau.
+
+**B. Vue "Employé" (Mobile First) :**
+* L'employé se connecte et ne voit **que** sa propre journée.
+* Détails visibles : Nom du client, Prestation, Heure.
+
+### 4.4 👤 Module Client (Réception + Admin)
+* **Fiche Client :** Nom, Prénom, Téléphone, Email (optionnel).
+* **Historique :** Liste des précédents RDV et total dépensé.
+* **Notes :** Champ libre (ex: "Allergique à telle huile", "Préfère le thé sans sucre").
+
+### 4.5 ⚙️ Module Paramètres / Prestations
+Interface CRUD pour gérer le catalogue (digitalisation des menus papiers).
+* Possibilité d'ajouter/modifier/supprimer une prestation.
+* Champs : Catégorie, Nom, Prix (DA), Durée estimée (min).
+
+### 4.6 🔔 Module Notifications
+* **Trigger :** Une fonction `Edge Function` s'exécute toutes les 5 ou 10 minutes.
+* **Logique :** Scanne la table `appointments`. Si `start_time` == `now() + 10min`, alors envoi d'une alerte.
+* **Canal :** Notification In-App (Toast) ou Push Notification (si PWA installée).
+
+---
+
+## 5. 💾 Schéma de Base de Données (Supabase)
+
+### Table `profiles` (Extension de auth.users)
+| Colonne | Type | Description |
+| :--- | :--- | :--- |
+| id | uuid | FK vers auth.users |
+| first_name | text | Prénom |
+| last_name | text | Nom |
+| role | text | 'superadmin', 'admin', 'reception', 'staff' |
+| color_code | text | Hex code pour l'agenda (ex: #FF5733) |
+
+### Table `services_categories`
+| Colonne | Type | Description |
+| :--- | :--- | :--- |
+| id | int | PK |
+| name | text | Coiffure, Onglerie, Hammam, etc. |
+
+### Table `services` (Catalogue)
+| Colonne | Type | Description |
+| :--- | :--- | :--- |
+| id | uuid | PK |
+| category_id | int | FK vers services_categories |
+| name | text | "Rituel Royal", "Brushing Courts" |
+| price | int | Prix en DA |
+| duration | int | Durée en minutes (ex: 60) |
+
+### Table `staff_skills` (Liaison Employé-Service)
+*Permet de savoir qui sait faire quoi.*
+| Colonne | Type | Description |
+| :--- | :--- | :--- |
+| profile_id | uuid | L'employé |
+| category_id | int | La catégorie qu'il maîtrise |
+
+### Table `clients`
+| Colonne | Type | Description |
+| :--- | :--- | :--- |
+| id | uuid | PK |
+| full_name | text | Nom complet |
+| phone | text | Indexé pour recherche rapide |
+| notes | text | Remarques |
+
+### Table `appointments` (Rendez-vous)
+| Colonne | Type | Description |
+| :--- | :--- | :--- |
+| id | uuid | PK |
+| created_at | timestamp | Date de création |
+| start_time | timestamp | Début du RDV |
+| end_time | timestamp | Fin du RDV (calculé via duration) |
+| client_id | uuid | FK Client |
+| staff_id | uuid | FK Profile (Employé) |
+| service_id | uuid | FK Service |
+| status | text | 'pending', 'confirmed', 'completed', 'cancelled' |
+
+---
+
+## 6. 📝 Données Initiales (À injecter)
+
+### Équipe (Staff)
+* **Onglerie :** Dounia, Safa, Chahinez
+* **Massage :** Samira
+* **Hammam :** Marie
+* **Coiffure :** Samira Samou (Coupe), Malika (Coloration), Kiki (Soins), Houda (Brushing), Karima (Balayage)
+* **Maquillage :** Sara
+* **Soins Visage/Épilation :** Saliha, Amel
+* **Réception :** Amina
+
+### Exemple Catalogue (Extrait des images)
+* **Coiffure :**
+    * Cheveux courts : 1000 DA
+    * Cheveux Mi-longs : 1500 DA
+    * Botox à partir de : 15000 DA
+    * Balayage Cheveux courts : 15000 DA
+* **Hammam :**
+    * Rituel Traditionnel : 2800 DA
+    * Rituel Royal : 3800 DA
+    * Rituel Sultana : 7000 DA
+* **Onglerie :**
+    * Vernis semi permanent mains : 3000 DA
+    * Gel mains : 3500 DA
+    * Pédicure Thuya : 4500 DA
+* **Massage :**
+    * Massage anti-stress : 6500 DA
+    * Massage relaxant : 5000 DA
+    * Madérothérapie : 10000 DA
+* **Soins Visage :**
+    * Soin marin aux 3 algues : 6000 DA
+    * Hydrafacial Hydraskin coreen : 15000 DA
+
+---
