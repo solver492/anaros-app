@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useMemo } from 'react';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -8,14 +8,14 @@ interface LayoutProps {
   title?: string;
 }
 
-export function Layout({ children, title }: LayoutProps) {
-  const style = {
-    '--sidebar-width': '16rem',
-    '--sidebar-width-icon': '3rem',
-  };
+const SIDEBAR_STYLE = {
+  '--sidebar-width': '16rem',
+  '--sidebar-width-icon': '3rem',
+} as React.CSSProperties;
 
+export function Layout({ children, title }: LayoutProps) {
   return (
-    <SidebarProvider style={style as React.CSSProperties}>
+    <SidebarProvider style={SIDEBAR_STYLE}>
       <div className="flex min-h-screen w-full">
         <AppSidebar />
         <SidebarInset className="flex flex-col flex-1">
