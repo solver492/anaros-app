@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -75,10 +75,15 @@ function UserFormModal({
   const { toast } = useToast();
   const isEditing = !!user;
 
+  // Memoize resolver to avoid infinite loops
+  const resolver = useMemo(() => {
+    return isEditing 
+      ? zodResolver(userSchema.omit({ password: true }).extend({ password: z.string().optional() }))
+      : zodResolver(userSchema);
+  }, [isEditing]);
+
   const form = useForm<UserForm>({
-    resolver: zodResolver(
-      isEditing ? userSchema.omit({ password: true }).extend({ password: z.string().optional() }) : userSchema
-    ),
+    resolver,
     defaultValues: {
       firstName: user?.firstName || '',
       lastName: user?.lastName || '',
@@ -92,6 +97,21 @@ function UserFormModal({
 
   const watchRole = form.watch('role');
   const watchSkills = form.watch('skills') || [];
+
+  // Reset form when modal opens/closes or user changes
+  useEffect(() => {
+    if (open) {
+      form.reset({
+        firstName: user?.firstName || '',
+        lastName: user?.lastName || '',
+        email: user?.email || '',
+        password: '',
+        role: user?.role || 'staff',
+        colorCode: user?.colorCode || '#3B82F6',
+        skills: user?.skills || [],
+      });
+    }
+  }, [open, user, form]);
 
   const mutation = useMutation({
     mutationFn: async (data: InsertProfile & { skills?: number[] }) => {
@@ -143,10 +163,11 @@ function UserFormModal({
     if (current.includes(categoryId)) {
       form.setValue(
         'skills',
-        current.filter((id) => id !== categoryId)
+        current.filter((id) => id !== categoryId),
+        { shouldValidate: false }
       );
     } else {
-      form.setValue('skills', [...current, categoryId]);
+      form.setValue('skills', [...current, categoryId], { shouldValidate: false });
     }
   };
 
@@ -305,7 +326,17 @@ function UserFormModal({
                     >
                       <Checkbox
                         checked={watchSkills.includes(category.id)}
-                        onCheckedChange={() => toggleSkill(category.id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            const current = form.getValues('skills') || [];
+                            if (!current.includes(category.id)) {
+                              form.setValue('skills', [...current, category.id], { shouldValidate: false });
+                            }
+                          } else {
+                            const current = form.getValues('skills') || [];
+                            form.setValue('skills', current.filter((id) => id !== category.id), { shouldValidate: false });
+                          }
+                        }}
                       />
                       <label className="text-sm font-medium cursor-pointer">
                         {category.name}
