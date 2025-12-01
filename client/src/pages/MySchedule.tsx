@@ -17,7 +17,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { AppointmentWithDetails } from '@shared/schema';
 
 function formatTime(date: Date): string {
@@ -127,6 +127,7 @@ export default function MySchedule() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [now, setNow] = useState(new Date());
 
   const { data: appointments = [], isLoading } = useQuery<AppointmentWithDetails[]>({
     queryKey: ['/api/appointments', 'staff', user?.id],
@@ -136,6 +137,12 @@ export default function MySchedule() {
     },
     enabled: !!user?.id,
   });
+
+  // Update current time every second
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
@@ -166,8 +173,6 @@ export default function MySchedule() {
       );
     })
     .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
-
-  const now = new Date();
 
   // Navigate to previous/next day
   const goToPreviousDay = () => {
@@ -291,10 +296,9 @@ export default function MySchedule() {
             {dayAppointments.map((appointment) => {
               const aptStart = new Date(appointment.startTime);
               const aptEnd = new Date(appointment.endTime);
+              // Show buttons if status is pending or confirmed (regardless of time)
               const isCurrentOrUpcoming =
-                isToday &&
-                (appointment.status === 'pending' || appointment.status === 'confirmed') &&
-                aptEnd > now;
+                appointment.status === 'pending' || appointment.status === 'confirmed';
 
               return (
                 <AppointmentCard

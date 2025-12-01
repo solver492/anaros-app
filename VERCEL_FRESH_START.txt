@@ -1,0 +1,83 @@
+================================================================================
+                    🔄 VERCEL - FRESH START (RECOMMANDÉ)
+================================================================================
+
+Le problème vient du cache de Vercel. La meilleure solution est de:
+1. Supprimer le projet Vercel actuel
+2. Créer un nouveau projet Vercel
+
+================================================================================
+                    🗑️ ÉTAPE 1: SUPPRIMER LE PROJET VERCEL
+================================================================================
+
+1. Ouvre: https://vercel.com/dashboard
+
+2. Clique sur: anaros-prod
+
+3. Clique sur: Settings (en haut)
+
+4. Scroll down jusqu'à: "Danger Zone"
+
+5. Clique: "Delete Project"
+
+6. Confirme en tapant: anaros-prod
+
+7. Clique: "Delete"
+
+================================================================================
+                    ✨ ÉTAPE 2: CRÉER UN NOUVEAU PROJET
+================================================================================
+
+1. Ouvre: https://vercel.com/new
+
+2. Clique: "Select a Git Repository"
+
+3. Cherche: solver492/anaros-prod
+
+4. Clique: "Import"
+
+5. Laisse les paramètres par défaut
+
+6. Clique: "Deploy"
+
+7. Attends: ~5-10 minutes
+
+8. Une fois "Ready", ouvre l'application
+
+================================================================================
+                    🧪 TESTER
+================================================================================
+
+1. Ouvre: https://anaros-prod.vercel.app
+
+2. Teste:
+   ✅ Page de connexion se charge
+   ✅ Calendrier s'affiche
+   ✅ Filtrage par employé fonctionne
+   ✅ Création de RDV fonctionne
+   ✅ Pas d'erreurs console (F12)
+
+================================================================================
+                    📝 VERCEL.JSON FINAL
+================================================================================
+
+{
+  "version": 2,
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "env": {
+    "NODE_ENV": "production"
+  }
+}
+
+================================================================================
+                    ✅ CHECKLIST
+================================================================================
+
+- [ ] Ancien projet Vercel supprimé
+- [ ] Nouveau projet créé
+- [ ] Déploiement réussi (Status: Ready)
+- [ ] Application testée
+- [ ] Pas d'erreurs
+
+================================================================================

@@ -1,0 +1,59 @@
+================================================================================
+                    ✅ RENDER BUILD ERROR RÉSOLU!
+================================================================================
+
+ERREUR: [vite]: Rollup failed to resolve import "react-big-calendar"
+
+CAUSE: react-big-calendar n'était pas dans les dependencies du package.json
+
+SOLUTION: Ajouter react-big-calendar aux dependencies
+
+================================================================================
+                    🔧 CE QUE J'AI FAIT
+================================================================================
+
+1. ✅ Ajouté "react-big-calendar": "^1.8.5" aux dependencies
+2. ✅ Poussé vers GitHub
+
+Maintenant Render va installer react-big-calendar lors du build!
+
+================================================================================
+                    🚀 REDÉPLOIE SUR RENDER
+================================================================================
+
+1. Ouvre: https://dashboard.render.com
+
+2. Clique sur: anaros-prod
+
+3. Clique: Manual Deploy → Deploy latest commit
+
+4. Attends: ~5-10 minutes
+
+5. Vérifie le status: "Live" ✅
+
+================================================================================
+                    🧪 APRÈS LE REDÉPLOIEMENT
+================================================================================
+
+1. Ouvre: https://anaros-prod.onrender.com (ou ton URL Render)
+
+2. Clique: Calendar
+
+3. Tu devrais voir React Big Calendar avec:
+   ✅ Vues: mois, semaine, jour, agenda
+   ✅ Filtrage par employé
+   ✅ Recherche en temps réel
+   ✅ Création de RDV
+   ✅ Gestion des statuts
+
+================================================================================
+                    📊 RÉSUMÉ
+================================================================================
+
+✅ package.json: Ajouté react-big-calendar
+✅ GitHub: Code synchronisé
+✅ Render: Prêt à redéployer
+
+Le build devrait réussir maintenant! 🚀
+
+================================================================================

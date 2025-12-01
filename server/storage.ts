@@ -475,6 +475,7 @@ export class MemStorage implements IStorage {
     const appointment: Appointment = {
       ...data,
       id,
+      status: data.status || 'pending',
       createdAt: new Date(),
     };
     this.appointments.set(id, appointment);
@@ -503,8 +504,6 @@ export class MemStorage implements IStorage {
     
     const appointments = Array.from(this.appointments.values());
     
-    const completedAppointments = appointments.filter(apt => apt.status === 'completed');
-    
     let revenueToday = 0;
     let revenueMonth = 0;
     let revenueYear = 0;
@@ -521,7 +520,9 @@ export class MemStorage implements IStorage {
       const isThisMonth = aptDate >= startOfMonth;
       const isThisYear = aptDate >= startOfYear;
 
-      if (isToday) appointmentsToday++;
+      // Count completed appointments only for today
+      if (isToday && apt.status === 'completed') appointmentsToday++;
+      
       if (apt.status === 'completed') {
         appointmentsCompleted++;
         if (isToday) revenueToday += price;
@@ -542,8 +543,14 @@ export class MemStorage implements IStorage {
   }
 
   async getTopEmployees(): Promise<TopEmployee[]> {
+    const today = new Date();
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    
     const appointments = Array.from(this.appointments.values())
-      .filter(apt => apt.status === 'completed');
+      .filter(apt => 
+        apt.status === 'completed' && 
+        new Date(apt.startTime) >= startOfMonth
+      );
     
     const employeeStats = new Map<string, { revenue: number; count: number }>();
     
@@ -577,8 +584,14 @@ export class MemStorage implements IStorage {
   }
 
   async getTopServices(): Promise<TopService[]> {
+    const today = new Date();
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    
     const appointments = Array.from(this.appointments.values())
-      .filter(apt => apt.status === 'completed');
+      .filter(apt => 
+        apt.status === 'completed' && 
+        new Date(apt.startTime) >= startOfMonth
+      );
     
     const serviceStats = new Map<string, { count: number; revenue: number }>();
     

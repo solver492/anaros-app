@@ -282,7 +282,6 @@ function GoldenClientCard({ client, loading }: { client: GoldenClient | null; lo
           </Avatar>
           <div className="flex-1">
             <p className="text-xl font-bold">{client.name}</p>
-            <p className="text-muted-foreground">{client.phone}</p>
             <div className="flex items-center gap-4 mt-2">
               <Badge className="bg-amber-500 text-white">
                 {formatDA(client.totalSpent)}

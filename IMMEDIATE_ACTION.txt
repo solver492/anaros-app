@@ -1,0 +1,45 @@
+================================================================================
+                    🚀 ACTION IMMÉDIATE REQUISE
+================================================================================
+
+Tu as une modal "Redeploy" ouverte sur Vercel!
+
+CLIQUE SUR LE BOUTON "Redeploy" MAINTENANT!
+
+================================================================================
+                    📋 ÉTAPES
+================================================================================
+
+1. Sur l'écran Vercel, tu vois une modal "Redeploy"
+
+2. Clique sur le bouton blanc "Redeploy" en bas à droite
+
+3. Attends: ~3-5 minutes
+
+4. Le déploiement devrait commencer
+
+5. Vérifie le status: "Ready" ✅
+
+================================================================================
+                    🎯 POURQUOI CETTE FOIS ÇA VA MARCHER
+================================================================================
+
+La nouvelle configuration vercel.json:
+✅ Force @vercel/node (pas de détection auto)
+✅ Pointe vers dist/index.cjs (le fichier compilé)
+✅ Route toutes les requêtes vers Express
+✅ Pas de "functions" - juste un serveur Node.js
+
+================================================================================
+                    ⏱️ ATTENDS 3-5 MINUTES
+================================================================================
+
+Après avoir cliqué "Redeploy":
+
+1. Tu verras "Building..." 
+2. Puis "Building complete"
+3. Puis "Ready" ✅
+
+Une fois "Ready", ouvre: https://anaros-prod.vercel.app
+
+================================================================================
