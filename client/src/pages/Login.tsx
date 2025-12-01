@@ -103,8 +103,8 @@ export default function Login() {
         <div className="backdrop-blur-xl bg-white/20 border border-white/30 rounded-3xl p-8 shadow-2xl">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white/30 backdrop-blur-md mb-4 border border-white/50">
-              <Sparkles className="h-8 w-8 text-white" />
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-white/30 backdrop-blur-md mb-4 border border-white/50 overflow-hidden">
+              <img src="/logo.jpg" alt="Anaros Logo" className="w-full h-full object-cover rounded-lg" />
             </div>
             <h1 className="text-4xl font-bold text-white mb-2">Anaros</h1>
             <p className="text-white/80 text-sm">Centre de Beauté - Gestion</p>
