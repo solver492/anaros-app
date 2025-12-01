@@ -12,7 +12,6 @@ import {
   Clock,
   User,
   Scissors,
-  Phone,
   CheckCircle,
   XCircle,
   ChevronLeft,
@@ -81,10 +80,6 @@ function AppointmentCard({
               </div>
 
               <div className="space-y-1 text-sm text-muted-foreground">
-                <p className="flex items-center gap-2">
-                  <Phone className="h-4 w-4" />
-                  {appointment.client.phone}
-                </p>
                 <p className="flex items-center gap-2">
                   <Scissors className="h-4 w-4" />
                   {appointment.service.name}
