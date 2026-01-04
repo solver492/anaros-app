@@ -93,13 +93,13 @@ export function ActivityLogDialog() {
                     Journal d'activité
                 </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col">
+            <DialogContent className="sm:max-w-5xl w-[95vw] max-h-[90vh] flex flex-col p-4 sm:p-6">
                 <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2 text-2xl">
-                        <History className="h-6 w-6 text-primary" />
+                    <DialogTitle className="flex items-center gap-2 text-xl sm:text-2xl">
+                        <History className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                         Journal d'Activité
                     </DialogTitle>
-                    <DialogDescription>
+                    <DialogDescription className="text-sm">
                         Historique complet des prestations par employé.
                     </DialogDescription>
                 </DialogHeader>
@@ -113,7 +113,7 @@ export function ActivityLogDialog() {
                             placeholder="Rechercher un client ou employé..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-10 pr-10"
+                            className="pl-10 pr-10 h-10"
                         />
                         {searchQuery && (
                             <Button
@@ -133,7 +133,7 @@ export function ActivityLogDialog() {
                             <Button
                                 variant="outline"
                                 className={cn(
-                                    "w-full sm:w-[240px] justify-start text-left font-normal",
+                                    "w-full sm:w-[240px] justify-start text-left font-normal h-10",
                                     !selectedDate && "text-muted-foreground"
                                 )}
                             >
@@ -171,7 +171,7 @@ export function ActivityLogDialog() {
                 </div>
 
                 {/* Results count */}
-                <div className="text-sm text-muted-foreground">
+                <div className="text-xs sm:text-sm text-muted-foreground">
                     {totalAppointments} rendez-vous trouvé{totalAppointments > 1 ? 's' : ''}
                     {selectedDate && ` le ${format(selectedDate, "d MMMM yyyy", { locale: fr })}`}
                 </div>
@@ -192,37 +192,39 @@ export function ActivityLogDialog() {
                         </p>
                     </div>
                 ) : (
-                    <ScrollArea className="h-[55vh] pr-4">
-                        <div className="space-y-6">
+                    <ScrollArea className="h-[55vh] pr-0 sm:pr-4">
+                        <div className="space-y-4 sm:space-y-6">
                             {filteredAndGrouped.map((group) => (
-                                <Card key={group.staff.id} className="border-2 hover-elevate">
-                                    <CardHeader className="pb-3">
-                                        <div className="flex items-center gap-3">
-                                            <Avatar
-                                                className="h-12 w-12 border-2"
-                                                style={{ borderColor: group.staff.colorCode }}
-                                            >
-                                                <AvatarFallback
-                                                    style={{
-                                                        backgroundColor: `${group.staff.colorCode}20`,
-                                                        color: group.staff.colorCode
-                                                    }}
-                                                    className="text-lg font-bold"
+                                <Card key={group.staff.id} className="border-1 sm:border-2 hover-elevate">
+                                    <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-3">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div className="flex items-center gap-3">
+                                                <Avatar
+                                                    className="h-10 w-10 sm:h-12 sm:w-12 border-2"
+                                                    style={{ borderColor: group.staff.colorCode }}
                                                 >
-                                                    {group.staff.firstName[0]}{group.staff.lastName[0]}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                            <div className="flex-1">
-                                                <CardTitle className="text-xl">
-                                                    {group.staff.firstName} {group.staff.lastName}
-                                                </CardTitle>
-                                                <CardDescription>
-                                                    {group.appointments.length} rendez-vous
-                                                </CardDescription>
+                                                    <AvatarFallback
+                                                        style={{
+                                                            backgroundColor: `${group.staff.colorCode}20`,
+                                                            color: group.staff.colorCode
+                                                        }}
+                                                        className="text-base sm:text-lg font-bold"
+                                                    >
+                                                        {group.staff.firstName[0]}{group.staff.lastName[0]}
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                                <div className="flex-1">
+                                                    <CardTitle className="text-lg sm:text-xl">
+                                                        {group.staff.firstName} {group.staff.lastName}
+                                                    </CardTitle>
+                                                    <CardDescription className="text-xs sm:text-sm">
+                                                        {group.appointments.length} rendez-vous
+                                                    </CardDescription>
+                                                </div>
                                             </div>
                                             <Badge
                                                 variant="secondary"
-                                                className="text-sm"
+                                                className="text-[10px] sm:text-xs px-2 py-0"
                                                 style={{
                                                     backgroundColor: `${group.staff.colorCode}15`,
                                                     color: group.staff.colorCode,
@@ -235,59 +237,81 @@ export function ActivityLogDialog() {
                                             </Badge>
                                         </div>
                                     </CardHeader>
-                                    <CardContent>
+                                    <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
                                         <div className="space-y-2">
                                             {group.appointments.map((apt) => (
                                                 <div
                                                     key={apt.id}
-                                                    className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors group"
+                                                    className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors group"
                                                 >
-                                                    {/* Client */}
-                                                    <div
-                                                        className="flex items-center gap-2 min-w-[180px] cursor-pointer hover:text-primary transition-colors"
-                                                        onClick={() => {
-                                                            setLocation(`/clients?clientId=${apt.client.id}`);
-                                                            setOpen(false);
-                                                        }}
-                                                    >
-                                                        <User className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
-                                                        <span className="font-medium truncate">{apt.client.fullName}</span>
+                                                    <div className="flex items-center justify-between flex-1 gap-3">
+                                                        {/* Client */}
+                                                        <div
+                                                            className="flex items-center gap-2 sm:min-w-[180px] cursor-pointer hover:text-primary transition-colors flex-1"
+                                                            onClick={() => {
+                                                                setLocation(`/clients?clientId=${apt.client.id}`);
+                                                                setOpen(false);
+                                                            }}
+                                                        >
+                                                            <User className="h-4 w-4 text-muted-foreground group-hover:text-primary shrink-0" />
+                                                            <span className="font-medium text-sm sm:text-base truncate">{apt.client.fullName}</span>
+                                                        </div>
+
+                                                        {/* Status (Mobile) */}
+                                                        <Badge
+                                                            variant={
+                                                                apt.status === 'completed' ? 'default' :
+                                                                    apt.status === 'cancelled' ? 'destructive' :
+                                                                        'secondary'
+                                                            }
+                                                            className={cn(
+                                                                "sm:hidden text-[10px] px-1.5 py-0 h-5",
+                                                                apt.status === 'confirmed' ? 'bg-emerald-500 hover:bg-emerald-600 text-white border-transparent' : ''
+                                                            )}
+                                                        >
+                                                            {apt.status === 'completed' ? 'Terminé' :
+                                                                apt.status === 'cancelled' ? 'Annulé' :
+                                                                    apt.status === 'confirmed' ? 'Confirmé' : 'En attente'}
+                                                        </Badge>
                                                     </div>
 
                                                     {/* Service */}
                                                     <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                        <Badge variant="outline" className="font-normal shrink-0">
+                                                        <Badge variant="outline" className="font-normal shrink-0 text-[10px] h-5">
                                                             {apt.service.category.name}
                                                         </Badge>
-                                                        <span className="text-sm truncate">{apt.service.name}</span>
+                                                        <span className="text-xs sm:text-sm truncate text-muted-foreground sm:text-foreground">{apt.service.name}</span>
                                                     </div>
 
-                                                    {/* Time */}
-                                                    <div className="flex flex-col text-sm min-w-[140px]">
-                                                        <span className="font-medium">
-                                                            {format(new Date(apt.startTime), "d MMM yyyy", { locale: fr })}
-                                                        </span>
-                                                        <span className="text-muted-foreground flex items-center gap-1 text-xs">
-                                                            <Clock className="h-3 w-3" />
-                                                            {format(new Date(apt.startTime), "HH:mm")} - {format(new Date(apt.endTime), "HH:mm")}
-                                                        </span>
-                                                    </div>
+                                                    <div className="flex items-center justify-between gap-3 sm:min-w-[140px]">
+                                                        {/* Time */}
+                                                        <div className="flex flex-row sm:flex-col items-center sm:items-start gap-2 sm:gap-0 text-sm">
+                                                            <span className="font-medium text-xs sm:text-sm">
+                                                                {format(new Date(apt.startTime), "d MMM", { locale: fr })}
+                                                            </span>
+                                                            <span className="text-muted-foreground flex items-center gap-1 text-[10px] sm:text-xs">
+                                                                <Clock className="h-3 w-3" />
+                                                                {format(new Date(apt.startTime), "HH:mm")} - {format(new Date(apt.endTime), "HH:mm")}
+                                                            </span>
+                                                        </div>
 
-                                                    {/* Status */}
-                                                    <Badge
-                                                        variant={
-                                                            apt.status === 'completed' ? 'default' :
-                                                                apt.status === 'cancelled' ? 'destructive' :
-                                                                    'secondary'
-                                                        }
-                                                        className={
-                                                            apt.status === 'confirmed' ? 'bg-emerald-500 hover:bg-emerald-600 text-white border-transparent shrink-0' : 'shrink-0'
-                                                        }
-                                                    >
-                                                        {apt.status === 'completed' ? 'Terminé' :
-                                                            apt.status === 'cancelled' ? 'Annulé' :
-                                                                apt.status === 'confirmed' ? 'Confirmé' : 'En attente'}
-                                                    </Badge>
+                                                        {/* Status (Desktop) */}
+                                                        <Badge
+                                                            variant={
+                                                                apt.status === 'completed' ? 'default' :
+                                                                    apt.status === 'cancelled' ? 'destructive' :
+                                                                        'secondary'
+                                                            }
+                                                            className={cn(
+                                                                "hidden sm:flex text-xs",
+                                                                apt.status === 'confirmed' ? 'bg-emerald-500 hover:bg-emerald-600 text-white border-transparent' : ''
+                                                            )}
+                                                        >
+                                                            {apt.status === 'completed' ? 'Terminé' :
+                                                                apt.status === 'cancelled' ? 'Annulé' :
+                                                                    apt.status === 'confirmed' ? 'Confirmé' : 'En attente'}
+                                                        </Badge>
+                                                    </div>
                                                 </div>
                                             ))}
                                         </div>
