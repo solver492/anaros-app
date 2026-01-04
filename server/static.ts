@@ -4,10 +4,13 @@ import path from "path";
 
 export function serveStatic(app: Express) {
   // On essaie plusieurs chemins pour être sûr de trouver le build
+  // @ts-ignore - support for both ESM and CJS
+  const currentDir = typeof import.meta !== 'undefined' && import.meta.dirname ? import.meta.dirname : __dirname;
+
   const possiblePaths = [
     path.resolve(process.cwd(), "dist", "public"),
-    path.resolve(import.meta.dirname, "public"),
-    path.resolve(import.meta.dirname, "..", "dist", "public"),
+    path.resolve(currentDir, "public"),
+    path.resolve(currentDir, "..", "dist", "public"),
   ];
 
   let distPath = possiblePaths[0];
