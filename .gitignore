@@ -1,5 +1,5 @@
 node_modules
-dist
+# dist (temporairement autorisé pour forcer le déploiement)
 .DS_Store
 server/public
 vite.config.ts.*
