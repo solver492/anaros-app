@@ -16,7 +16,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient, apiRequest } from '@/lib/queryClient';
-import { Plus, User, Clock, Scissors, Loader2, X, Check, XCircle, Phone, ChevronDown } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Plus, User, Clock, Scissors, Loader2, X, Check, XCircle, Phone, ChevronDown, MessageSquare } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Profile, Client, ServiceWithCategory, AppointmentWithDetails, InsertAppointment } from '@shared/schema';
 
@@ -316,13 +317,21 @@ function AppointmentDetailsModal({
   open,
   onOpenChange,
   appointment,
-  onStatusChange,
+  onUpdate,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   appointment: AppointmentWithDetails | null;
-  onStatusChange: (id: string, status: string) => void;
+  onUpdate: (id: string, updates: { status?: string, notes?: string }) => void;
 }) {
+  const [notes, setNotes] = useState(appointment?.notes || '');
+
+  useEffect(() => {
+    if (appointment) {
+      setNotes(appointment.notes || '');
+    }
+  }, [appointment]);
+
   if (!appointment) return null;
 
   const statusLabels: Record<string, string> = {
@@ -339,14 +348,18 @@ function AppointmentDetailsModal({
     cancelled: 'bg-red-100 text-red-800',
   };
 
+  const handleUpdateNotes = () => {
+    onUpdate(appointment.id, { notes });
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Détails du Rendez-vous</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
           <div className="flex items-center justify-between">
             <Badge className={statusColors[appointment.status]}>
               {statusLabels[appointment.status]}
@@ -360,21 +373,45 @@ function AppointmentDetailsModal({
             </span>
           </div>
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <User className="h-4 w-4" />
-                Client
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="font-semibold">{appointment.client.fullName}</p>
-              <p className="text-sm text-muted-foreground flex items-center gap-1">
-                <Phone className="h-3 w-3" />
-                {appointment.client.phone}
-              </p>
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  Client
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="font-semibold">{appointment.client.fullName}</p>
+                <p className="text-sm text-muted-foreground flex items-center gap-1">
+                  <Phone className="h-3 w-3" />
+                  {appointment.client.phone}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  Horaire
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="font-semibold">
+                  {new Date(appointment.startTime).toLocaleTimeString('fr-FR', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}{' '}
+                  -{' '}
+                  {new Date(appointment.endTime).toLocaleTimeString('fr-FR', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
 
           <Card>
             <CardHeader className="pb-2">
@@ -385,71 +422,68 @@ function AppointmentDetailsModal({
             </CardHeader>
             <CardContent>
               <p className="font-semibold">{appointment.service.name}</p>
-              <div className="flex items-center gap-2 mt-1">
-                <Badge variant="secondary">{appointment.service.category?.name}</Badge>
-                <span className="text-sm text-muted-foreground">
-                  {appointment.service.duration} min
-                </span>
-                <span className="font-medium">{appointment.service.price} DA</span>
+              <div className="flex items-center justify-between mt-1">
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary">{appointment.service.category?.name}</Badge>
+                  <span className="text-sm text-muted-foreground">{appointment.service.duration} min</span>
+                </div>
+                <span className="font-bold text-primary">{appointment.service.price} DA</span>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                Horaire
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="font-semibold">
-                {new Date(appointment.startTime).toLocaleTimeString('fr-FR', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}{' '}
-                -{' '}
-                {new Date(appointment.endTime).toLocaleTimeString('fr-FR', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Avec {appointment.staff.firstName} {appointment.staff.lastName}
-              </p>
-            </CardContent>
-          </Card>
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4" />
+              Notes de la prestation
+            </Label>
+            <Textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Ajouter des détails (ex: préférences cliente, produits utilisés...)"
+              className="resize-none"
+            />
+            {notes !== (appointment.notes || '') && (
+              <Button size="sm" onClick={handleUpdateNotes} className="w-full mt-2">
+                Enregistrer la note
+              </Button>
+            )}
+          </div>
         </div>
 
-        <DialogFooter className="flex-col gap-2 sm:flex-row">
-          {appointment.status === 'pending' && (
-            <>
+        <DialogFooter className="flex-col gap-2 sm:flex-row border-t pt-4">
+          <div className="flex flex-wrap gap-2 w-full sm:justify-end">
+            {appointment.status === 'pending' && (
+              <>
+                <Button
+                  variant="outline"
+                  className="text-emerald-600 hover:bg-emerald-50"
+                  onClick={() => onUpdate(appointment.id, { status: 'confirmed' })}
+                >
+                  <Check className="mr-2 h-4 w-4" />
+                  Confirmer
+                </Button>
+                <Button
+                  variant="outline"
+                  className="text-red-600 hover:bg-red-50"
+                  onClick={() => onUpdate(appointment.id, { status: 'cancelled' })}
+                >
+                  <XCircle className="mr-2 h-4 w-4" />
+                  Annuler
+                </Button>
+              </>
+            )}
+            {appointment.status === 'confirmed' && (
               <Button
-                variant="outline"
-                className="text-emerald-600"
-                onClick={() => onStatusChange(appointment.id, 'confirmed')}
+                className="w-full sm:w-auto bg-green-600 hover:bg-green-700"
+                onClick={() => onUpdate(appointment.id, { status: 'completed' })}
               >
                 <Check className="mr-2 h-4 w-4" />
-                Confirmer
+                Marquer comme terminé
               </Button>
-              <Button
-                variant="outline"
-                className="text-red-600"
-                onClick={() => onStatusChange(appointment.id, 'cancelled')}
-              >
-                <XCircle className="mr-2 h-4 w-4" />
-                Annuler
-              </Button>
-            </>
-          )}
-          {appointment.status === 'confirmed' && (
-            <Button
-              onClick={() => onStatusChange(appointment.id, 'completed')}
-            >
-              <Check className="mr-2 h-4 w-4" />
-              Marquer comme terminé
-            </Button>
-          )}
+            )}
+            <Button variant="ghost" onClick={() => onOpenChange(false)}>Fermer</Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -490,19 +524,18 @@ export default function CalendarPage() {
     queryKey: ['/api/appointments'],
   });
 
-  const updateStatus = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const res = await apiRequest('PATCH', `/api/appointments/${id}/status`, { status });
+  const updateAppointmentAction = useMutation({
+    mutationFn: async ({ id, status, notes }: { id: string; status?: string; notes?: string }) => {
+      const res = await apiRequest('PATCH', `/api/appointments/${id}`, { status, notes });
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/appointments'] });
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
-      toast({ title: 'Succès', description: 'Statut mis à jour' });
-      setShowAppointmentDetails(false);
+      toast({ title: 'Succès', description: 'Rendez-vous mis à jour' });
     },
     onError: () => {
-      toast({ title: 'Erreur', description: 'Impossible de mettre à jour le statut', variant: 'destructive' });
+      toast({ title: 'Erreur', description: 'Impossible de mettre à jour le rendez-vous', variant: 'destructive' });
     },
   });
 
@@ -743,7 +776,7 @@ export default function CalendarPage() {
         open={showAppointmentDetails}
         onOpenChange={setShowAppointmentDetails}
         appointment={selectedAppointment}
-        onStatusChange={(id, status) => updateStatus.mutate({ id, status })}
+        onUpdate={(id, updates) => updateAppointmentAction.mutate({ id, ...updates })}
       />
 
       <style>{`

@@ -13,13 +13,13 @@ export async function registerRoutes(
   app.post("/api/auth/login", async (req: Request, res: Response) => {
     try {
       const { email, password } = req.body;
-      
+
       if (!email || !password) {
         return res.status(400).json({ error: "Email et mot de passe requis" });
       }
 
       const user = await storage.authenticateUser(email, password);
-      
+
       if (!user) {
         return res.status(401).json({ error: "Email ou mot de passe incorrect" });
       }
@@ -275,12 +275,12 @@ export async function registerRoutes(
   app.get("/api/appointments", async (req: Request, res: Response) => {
     try {
       const { staff: staffId } = req.query;
-      
+
       if (staffId && typeof staffId === 'string') {
         const appointments = await storage.getAppointmentsByStaff(staffId);
         return res.json(appointments);
       }
-      
+
       const appointments = await storage.getAppointments();
       res.json(appointments);
     } catch (error) {
@@ -297,7 +297,7 @@ export async function registerRoutes(
         startTime: new Date(req.body.startTime),
         endTime: new Date(req.body.endTime),
       };
-      
+
       const parsed = insertAppointmentSchema.parse(data);
       const appointment = await storage.createAppointment(parsed);
       res.status(201).json(appointment);
@@ -310,13 +310,26 @@ export async function registerRoutes(
     }
   });
 
+  app.patch("/api/appointments/:id", async (req: Request, res: Response) => {
+    try {
+      const appointment = await storage.updateAppointment(req.params.id, req.body);
+      if (!appointment) {
+        return res.status(404).json({ error: "Rendez-vous non trouvé" });
+      }
+      res.json(appointment);
+    } catch (error) {
+      console.error("Update appointment error:", error);
+      res.status(500).json({ error: "Erreur serveur" });
+    }
+  });
+
   app.patch("/api/appointments/:id/status", async (req: Request, res: Response) => {
     try {
       const { status } = req.body;
       if (!status || !['pending', 'confirmed', 'completed', 'cancelled'].includes(status)) {
         return res.status(400).json({ error: "Statut invalide" });
       }
-      
+
       const appointment = await storage.updateAppointmentStatus(req.params.id, status);
       if (!appointment) {
         return res.status(404).json({ error: "Rendez-vous non trouvé" });

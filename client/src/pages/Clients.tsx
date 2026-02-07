@@ -16,6 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { useLocation, useSearch } from "wouter";
+import { cn } from '@/lib/utils';
 import {
   Plus,
   Search,
@@ -29,6 +30,7 @@ import {
   DollarSign,
   User,
   X,
+  MessageSquare,
 } from 'lucide-react';
 import type { Client, InsertClient, AppointmentWithDetails } from '@shared/schema';
 
@@ -306,44 +308,54 @@ function ClientDetailsModal({
               {appointments.map((apt) => (
                 <div
                   key={apt.id}
-                  className="flex items-center justify-between p-3 rounded-lg border hover-elevate"
+                  className="flex flex-col gap-2 p-3 rounded-lg border hover-elevate transition-all duration-300"
                 >
-                  <div>
-                    <p className="font-medium">{apt.service.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(apt.startTime).toLocaleDateString('fr-FR', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric',
-                      })}{' '}
-                      à{' '}
-                      {new Date(apt.startTime).toLocaleTimeString('fr-FR', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-medium">{apt.service.price} DA</p>
-                    <Badge
-                      variant="secondary"
-                      className={
-                        apt.status === 'completed'
-                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200'
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-sm sm:text-base">{apt.service.name}</p>
+                      <p className="text-[10px] sm:text-sm text-muted-foreground">
+                        {new Date(apt.startTime).toLocaleDateString('fr-FR', {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric',
+                        })}{' '}
+                        à{' '}
+                        {new Date(apt.startTime).toLocaleTimeString('fr-FR', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium text-sm sm:text-base">{apt.service.price} DA</p>
+                      <Badge
+                        variant="secondary"
+                        className={cn(
+                          "text-[10px] px-1.5 py-0",
+                          apt.status === 'completed'
+                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200'
+                            : apt.status === 'cancelled'
+                              ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                              : ''
+                        )}
+                      >
+                        {apt.status === 'completed'
+                          ? 'Terminé'
                           : apt.status === 'cancelled'
-                            ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                            : ''
-                      }
-                    >
-                      {apt.status === 'completed'
-                        ? 'Terminé'
-                        : apt.status === 'cancelled'
-                          ? 'Annulé'
-                          : apt.status === 'confirmed'
-                            ? 'Confirmé'
-                            : 'En attente'}
-                    </Badge>
+                            ? 'Annulé'
+                            : apt.status === 'confirmed'
+                              ? 'Confirmé'
+                              : 'En attente'}
+                      </Badge>
+                    </div>
                   </div>
+
+                  {apt.notes && (
+                    <div className="p-2 bg-primary/5 rounded border border-primary/10 text-[10px] sm:text-xs flex items-start gap-2 italic text-muted-foreground">
+                      <MessageSquare className="h-3 w-3 mt-0.5 text-primary shrink-0" />
+                      <span className="leading-relaxed">{apt.notes}</span>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

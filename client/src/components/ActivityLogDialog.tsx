@@ -19,7 +19,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { History, Clock, User, Search, CalendarIcon, X } from 'lucide-react';
+import { History, Clock, User, Search, CalendarIcon, X, MessageSquare } from 'lucide-react';
 import type { AppointmentWithDetails } from '@shared/schema';
 import { cn } from '@/lib/utils';
 
@@ -242,76 +242,86 @@ export function ActivityLogDialog() {
                                             {group.appointments.map((apt) => (
                                                 <div
                                                     key={apt.id}
-                                                    className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors group"
+                                                    className="flex flex-col gap-2 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors group"
                                                 >
-                                                    <div className="flex items-center justify-between flex-1 gap-3">
-                                                        {/* Client */}
-                                                        <div
-                                                            className="flex items-center gap-2 sm:min-w-[180px] cursor-pointer hover:text-primary transition-colors flex-1"
-                                                            onClick={() => {
-                                                                setLocation(`/clients?clientId=${apt.client.id}`);
-                                                                setOpen(false);
-                                                            }}
-                                                        >
-                                                            <User className="h-4 w-4 text-muted-foreground group-hover:text-primary shrink-0" />
-                                                            <span className="font-medium text-sm sm:text-base truncate">{apt.client.fullName}</span>
+                                                    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                                                        <div className="flex items-center justify-between flex-1 gap-3">
+                                                            {/* Client */}
+                                                            <div
+                                                                className="flex items-center gap-2 sm:min-w-[180px] cursor-pointer hover:text-primary transition-colors flex-1"
+                                                                onClick={() => {
+                                                                    setLocation(`/clients?clientId=${apt.client.id}`);
+                                                                    setOpen(false);
+                                                                }}
+                                                            >
+                                                                <User className="h-4 w-4 text-muted-foreground group-hover:text-primary shrink-0" />
+                                                                <span className="font-medium text-sm sm:text-base truncate">{apt.client.fullName}</span>
+                                                            </div>
+
+                                                            {/* Status (Mobile) */}
+                                                            <Badge
+                                                                variant={
+                                                                    apt.status === 'completed' ? 'default' :
+                                                                        apt.status === 'cancelled' ? 'destructive' :
+                                                                            'secondary'
+                                                                }
+                                                                className={cn(
+                                                                    "sm:hidden text-[10px] px-1.5 py-0 h-5",
+                                                                    apt.status === 'confirmed' ? 'bg-emerald-500 hover:bg-emerald-600 text-white border-transparent' : ''
+                                                                )}
+                                                            >
+                                                                {apt.status === 'completed' ? 'Terminé' :
+                                                                    apt.status === 'cancelled' ? 'Annulé' :
+                                                                        apt.status === 'confirmed' ? 'Confirmé' : 'En attente'}
+                                                            </Badge>
                                                         </div>
 
-                                                        {/* Status (Mobile) */}
-                                                        <Badge
-                                                            variant={
-                                                                apt.status === 'completed' ? 'default' :
-                                                                    apt.status === 'cancelled' ? 'destructive' :
-                                                                        'secondary'
-                                                            }
-                                                            className={cn(
-                                                                "sm:hidden text-[10px] px-1.5 py-0 h-5",
-                                                                apt.status === 'confirmed' ? 'bg-emerald-500 hover:bg-emerald-600 text-white border-transparent' : ''
-                                                            )}
-                                                        >
-                                                            {apt.status === 'completed' ? 'Terminé' :
-                                                                apt.status === 'cancelled' ? 'Annulé' :
-                                                                    apt.status === 'confirmed' ? 'Confirmé' : 'En attente'}
-                                                        </Badge>
-                                                    </div>
-
-                                                    {/* Service */}
-                                                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                        <Badge variant="outline" className="font-normal shrink-0 text-[10px] h-5">
-                                                            {apt.service.category.name}
-                                                        </Badge>
-                                                        <span className="text-xs sm:text-sm truncate text-muted-foreground sm:text-foreground">{apt.service.name}</span>
-                                                    </div>
-
-                                                    <div className="flex items-center justify-between gap-3 sm:min-w-[140px]">
-                                                        {/* Time */}
-                                                        <div className="flex flex-row sm:flex-col items-center sm:items-start gap-2 sm:gap-0 text-sm">
-                                                            <span className="font-medium text-xs sm:text-sm">
-                                                                {format(new Date(apt.startTime), "d MMM", { locale: fr })}
-                                                            </span>
-                                                            <span className="text-muted-foreground flex items-center gap-1 text-[10px] sm:text-xs">
-                                                                <Clock className="h-3 w-3" />
-                                                                {format(new Date(apt.startTime), "HH:mm")} - {format(new Date(apt.endTime), "HH:mm")}
-                                                            </span>
+                                                        {/* Service */}
+                                                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                            <Badge variant="outline" className="font-normal shrink-0 text-[10px] h-5">
+                                                                {apt.service.category.name}
+                                                            </Badge>
+                                                            <span className="text-xs sm:text-sm truncate text-muted-foreground sm:text-foreground">{apt.service.name}</span>
                                                         </div>
 
-                                                        {/* Status (Desktop) */}
-                                                        <Badge
-                                                            variant={
-                                                                apt.status === 'completed' ? 'default' :
-                                                                    apt.status === 'cancelled' ? 'destructive' :
-                                                                        'secondary'
-                                                            }
-                                                            className={cn(
-                                                                "hidden sm:flex text-xs",
-                                                                apt.status === 'confirmed' ? 'bg-emerald-500 hover:bg-emerald-600 text-white border-transparent' : ''
-                                                            )}
-                                                        >
-                                                            {apt.status === 'completed' ? 'Terminé' :
-                                                                apt.status === 'cancelled' ? 'Annulé' :
-                                                                    apt.status === 'confirmed' ? 'Confirmé' : 'En attente'}
-                                                        </Badge>
+                                                        <div className="flex items-center justify-between gap-3 sm:min-w-[140px]">
+                                                            {/* Time */}
+                                                            <div className="flex flex-row sm:flex-col items-center sm:items-start gap-2 sm:gap-0 text-sm">
+                                                                <span className="font-medium text-xs sm:text-sm">
+                                                                    {format(new Date(apt.startTime), "d MMM", { locale: fr })}
+                                                                </span>
+                                                                <span className="text-muted-foreground flex items-center gap-1 text-[10px] sm:text-xs">
+                                                                    <Clock className="h-3 w-3" />
+                                                                    {format(new Date(apt.startTime), "HH:mm")} - {format(new Date(apt.endTime), "HH:mm")}
+                                                                </span>
+                                                            </div>
+
+                                                            {/* Status (Desktop) */}
+                                                            <Badge
+                                                                variant={
+                                                                    apt.status === 'completed' ? 'default' :
+                                                                        apt.status === 'cancelled' ? 'destructive' :
+                                                                            'secondary'
+                                                                }
+                                                                className={cn(
+                                                                    "hidden sm:flex text-xs",
+                                                                    apt.status === 'confirmed' ? 'bg-emerald-500 hover:bg-emerald-600 text-white border-transparent' : ''
+                                                                )}
+                                                            >
+                                                                {apt.status === 'completed' ? 'Terminé' :
+                                                                    apt.status === 'cancelled' ? 'Annulé' :
+                                                                        apt.status === 'confirmed' ? 'Confirmé' : 'En attente'}
+                                                            </Badge>
+                                                        </div>
                                                     </div>
+
+                                                    {/* Note Display (If exists) */}
+                                                    {apt.notes && (
+                                                        <div className="mt-1 p-2 bg-primary/5 rounded border border-primary/10 text-[11px] flex items-start gap-2 italic text-muted-foreground group-hover:bg-primary/10 transition-colors">
+                                                            <MessageSquare className="h-3 w-3 mt-0.5 text-primary shrink-0" />
+                                                            <span className="leading-relaxed">{apt.notes}</span>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             ))}
                                         </div>

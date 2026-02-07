@@ -8,18 +8,18 @@ const db = new Database(dbPath);
 console.log("👥 Ajout des employés et de leurs compétences...");
 
 const staffList = [
-    { name: "Karima", categories: ["Coiffure"] },
-    { name: "Malika", categories: ["Coiffure"] },
-    { name: "Farida", categories: ["Coiffure"] },
-    { name: "Meriem", categories: ["Coiffure"] },
-    { name: "Houda", categories: ["Coiffure"] },
-    { name: "Samira", categories: ["Coiffure", "Massage"] },
-    { name: "Dounia", categories: ["Onglerie"] },
-    { name: "Safa", categories: ["Onglerie"] },
-    { name: "Chanez", categories: ["Onglerie"] },
-    { name: "Sara", categories: ["Maquillage"] },
-    { name: "Saliha", categories: ["Soin visage et epilation"] },
-    { name: "Amel", categories: ["Soin visage et epilation"] },
+    { name: "Karima", categories: ["Coiffures"] },
+    { name: "Malika", categories: ["Coiffures"] },
+    { name: "Farida", categories: ["Coiffures"] },
+    { name: "Meriem", categories: ["Coiffures"] },
+    { name: "Houda", categories: ["Coiffures"] },
+    { name: "Samira", categories: ["Coiffures", "Formules Hammam"] },
+    { name: "Dounia", categories: ["Onglerie", "Manucure", "Pédicure"] },
+    { name: "Safa", categories: ["Onglerie", "Manucure", "Pédicure"] },
+    { name: "Chanez", categories: ["Onglerie", "Manucure", "Pédicure"] },
+    { name: "Sara", categories: ["Maquillages"] },
+    { name: "Saliha", categories: ["Soins Du Visage (Thalgo)", "Soins Du Visage (Esthemax)", "Hydrafacial"] },
+    { name: "Amel", categories: ["Soins Du Visage (Thalgo)", "Soins Du Visage (Esthemax)", "Hydrafacial"] },
 ];
 
 for (const staff of staffList) {

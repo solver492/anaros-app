@@ -98,6 +98,7 @@ export const appointments = sqliteTable("appointments", {
   staffId: text("staff_id").notNull(),
   serviceId: text("service_id").notNull(),
   status: text("status").$type<AppointmentStatus>().notNull().default('pending'),
+  notes: text("notes"),
 });
 
 export const insertAppointmentSchema = createInsertSchema(appointments, {

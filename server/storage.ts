@@ -86,7 +86,7 @@ export class DatabaseStorage implements IStorage {
       const [user] = await db
         .select()
         .from(profiles)
-        .where(and(eq(profiles.email, email), eq(profiles.password, password)));
+        .where(and(eq(sql`LOWER(${profiles.email})`, email.toLowerCase()), eq(profiles.password, password)));
 
       console.log(`[AUTH DEBUG] Résultat DB:`, user ? "Utilisateur trouvé" : "Utilisateur NON trouvé");
 
@@ -352,13 +352,20 @@ export class DatabaseStorage implements IStorage {
     return newApt;
   }
 
-  async updateAppointmentStatus(id: string, status: string): Promise<Appointment | undefined> {
+  async updateAppointment(id: string, updates: { status?: string, notes?: string }): Promise<Appointment | undefined> {
     const [updated] = await db
       .update(appointments)
-      .set({ status: status as any })
+      .set({
+        ...(updates.status && { status: updates.status as any }),
+        ...(updates.notes !== undefined && { notes: updates.notes })
+      })
       .where(eq(appointments.id, id))
       .returning();
     return updated;
+  }
+
+  async updateAppointmentStatus(id: string, status: string): Promise<Appointment | undefined> {
+    return this.updateAppointment(id, { status });
   }
 
   async deleteAppointment(id: string): Promise<boolean> {

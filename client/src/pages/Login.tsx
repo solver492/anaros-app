@@ -42,7 +42,7 @@ export default function Login() {
           title: 'Bienvenue!',
           description: 'Connexion réussie',
         });
-        setLocation('/dashboard');
+        setLocation('/');
       } else {
         toast({
           title: 'Erreur',

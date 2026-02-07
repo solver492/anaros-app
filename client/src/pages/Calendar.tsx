@@ -15,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient, apiRequest } from '@/lib/queryClient';
-import { Plus, User, Clock, Scissors, Loader2, X, Check, XCircle, Phone } from 'lucide-react';
+import { Plus, User, Clock, Scissors, Loader2, X, Check, XCircle, Phone, MessageSquare } from 'lucide-react';
 import type { Profile, Client, ServiceWithCategory, AppointmentWithDetails, InsertAppointment } from '@shared/schema';
 
 interface CalendarResource {
@@ -187,8 +187,8 @@ function AppointmentModal({
             <div key={s} className="flex items-center flex-1">
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= s
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground'
                   }`}
               >
                 {s}
@@ -249,8 +249,8 @@ function AppointmentModal({
                   <div
                     key={client.id}
                     className={`p-3 rounded-lg border cursor-pointer hover-elevate ${selectedClient === client.id
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border'
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border'
                       }`}
                     onClick={() => setSelectedClient(client.id)}
                     data-testid={`client-option-${client.id}`}
@@ -288,8 +288,8 @@ function AppointmentModal({
                 <div
                   key={service.id}
                   className={`p-3 rounded-lg border cursor-pointer hover-elevate ${selectedService === service.id
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border'
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border'
                     }`}
                   onClick={() => setSelectedService(service.id)}
                   data-testid={`service-option-${service.id}`}
@@ -338,8 +338,8 @@ function AppointmentModal({
                   <div
                     key={member.id}
                     className={`p-3 rounded-lg border cursor-pointer hover-elevate ${selectedStaff === member.id
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border'
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border'
                       }`}
                     onClick={() => setSelectedStaff(member.id)}
                     data-testid={`staff-option-${member.id}`}
@@ -546,6 +546,22 @@ function AppointmentDetailsModal({
               </p>
             </CardContent>
           </Card>
+
+          {appointment.notes && (
+            <Card className="bg-primary/5 border-primary/20">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-primary flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  Note de prestation
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm italic text-muted-foreground whitespace-pre-wrap">
+                  {appointment.notes}
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         <DialogFooter className="flex-col gap-2 sm:flex-row">

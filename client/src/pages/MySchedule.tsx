@@ -5,8 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient, apiRequest } from '@/lib/queryClient';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Calendar,
   Clock,
@@ -16,6 +18,8 @@ import {
   XCircle,
   ChevronLeft,
   ChevronRight,
+  MessageSquare,
+  Save
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import type { AppointmentWithDetails } from '@shared/schema';
@@ -29,12 +33,17 @@ function AppointmentCard({
   isCurrentOrUpcoming,
   onComplete,
   onCancel,
+  onUpdateNotes,
 }: {
   appointment: AppointmentWithDetails;
   isCurrentOrUpcoming: boolean;
   onComplete: () => void;
   onCancel: () => void;
+  onUpdateNotes: (notes: string) => void;
 }) {
+  const [notes, setNotes] = useState(appointment.notes || '');
+  const [isNotesOpen, setIsNotesOpen] = useState(false);
+
   const startTime = new Date(appointment.startTime);
   const endTime = new Date(appointment.endTime);
 
@@ -52,74 +61,153 @@ function AppointmentCard({
     cancelled: 'Annulé',
   };
 
-  return (
-    <Card
-      className={`border-card-border ${
-        isCurrentOrUpcoming ? 'border-l-4 border-l-primary' : ''
-      }`}
-      data-testid={`schedule-appointment-${appointment.id}`}
-    >
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-start gap-4">
-            {/* Time column */}
-            <div className="text-center min-w-16">
-              <p className="text-2xl font-bold">{formatTime(startTime)}</p>
-              <p className="text-sm text-muted-foreground">
-                → {formatTime(endTime)}
-              </p>
-            </div>
+  useEffect(() => {
+    setNotes(appointment.notes || '');
+  }, [appointment.notes]);
 
-            {/* Details */}
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-semibold text-lg">{appointment.client.fullName}</h3>
-                <Badge className={statusColors[appointment.status]}>
-                  {statusLabels[appointment.status]}
-                </Badge>
+  const handleSaveNotes = () => {
+    onUpdateNotes(notes);
+    setIsNotesOpen(false);
+  };
+
+  return (
+    <>
+      <Card
+        className={`border-card-border overflow-hidden transition-all duration-300 hover:shadow-md ${isCurrentOrUpcoming ? 'border-l-4 border-l-primary bg-primary/2' : ''
+          }`}
+        data-testid={`schedule-appointment-${appointment.id}`}
+      >
+        <CardContent className="p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-4">
+              {/* Time column */}
+              <div className="text-center min-w-[70px] bg-muted/50 rounded-lg p-2 border border-border">
+                <p className="text-xl font-bold text-foreground leading-tight">{formatTime(startTime)}</p>
+                <div className="h-px bg-border my-1" />
+                <p className="text-xs text-muted-foreground font-medium">
+                  {formatTime(endTime)}
+                </p>
               </div>
 
-              <div className="space-y-1 text-sm text-muted-foreground">
-                <p className="flex items-center gap-2">
-                  <Scissors className="h-4 w-4" />
-                  {appointment.service.name}
-                </p>
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  {appointment.service.duration} min
-                  <span className="font-medium">{appointment.service.price} DA</span>
+              {/* Details */}
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2 mb-1">
+                  <h3 className="font-bold text-lg text-foreground truncate">{appointment.client.fullName}</h3>
+                  <Badge className={`${statusColors[appointment.status]} border-none font-medium text-[10px]`}>
+                    {statusLabels[appointment.status]}
+                  </Badge>
+                </div>
+
+                <div className="space-y-1.5">
+                  <p className="flex items-center gap-2 text-primary font-bold text-sm">
+                    <Scissors className="h-4 w-4" />
+                    {appointment.service.name}
+                  </p>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                    <p className="flex items-center gap-1.5 font-medium">
+                      <Clock className="h-3.5 w-3.5" />
+                      {appointment.service.duration} min
+                    </p>
+                    <p className="font-bold text-foreground">
+                      {appointment.service.price} DA
+                    </p>
+                  </div>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                    <User className="h-3.5 w-3.5" />
+                    Tél: <span className="font-semibold text-foreground">{appointment.client.phone}</span>
+                  </p>
+
+                  {appointment.notes && (
+                    <div className="mt-2 p-2 bg-primary/5 rounded border border-primary/10 text-[11px] flex items-start gap-2 italic text-muted-foreground cursor-pointer hover:bg-primary/10 transition-colors"
+                      onClick={() => setIsNotesOpen(true)}>
+                      <MessageSquare className="h-3 w-3 mt-0.5 text-primary shrink-0" />
+                      <span className="line-clamp-2 max-w-[300px]">{appointment.notes}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Actions for active appointments */}
-          {(appointment.status === 'pending' || appointment.status === 'confirmed') && (
-            <div className="flex flex-col gap-2">
-              <Button
-                size="sm"
-                onClick={onComplete}
-                className="gap-1"
-                data-testid={`button-complete-${appointment.id}`}
-              >
-                <CheckCircle className="h-4 w-4" />
-                Terminer
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={onCancel}
-                className="gap-1 text-destructive"
-                data-testid={`button-cancel-${appointment.id}`}
-              >
-                <XCircle className="h-4 w-4" />
-                Annuler
-              </Button>
+            {/* Actions */}
+            <div className="flex items-center shrink-0">
+              {(appointment.status === 'pending' || appointment.status === 'confirmed') && (
+                <div className="flex flex-row items-center gap-2 p-1.5 bg-muted/20 rounded-xl border border-border shadow-sm">
+                  <Button
+                    size="sm"
+                    onClick={onComplete}
+                    className="gap-2 bg-pink-600 hover:bg-pink-700 text-white font-bold h-9 px-4"
+                  >
+                    <CheckCircle className="h-4 w-4" />
+                    Terminer
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => setIsNotesOpen(true)}
+                    className="gap-2 bg-background border border-primary/20 text-primary hover:bg-primary/5 font-bold h-9 px-4"
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                    Note
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={onCancel}
+                    className="gap-2 text-destructive/70 hover:text-destructive hover:bg-destructive/5 font-medium h-9 px-4"
+                  >
+                    <XCircle className="h-4 w-4" />
+                    Annuler
+                  </Button>
+                </div>
+              )}
+              {appointment.status === 'completed' && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsNotesOpen(true)}
+                  className="gap-2 border-primary/20 text-primary font-bold h-9 px-4"
+                >
+                  <MessageSquare className="h-4 w-4" />
+                  {appointment.notes ? 'Modifier note' : 'Ajouter note'}
+                </Button>
+              )}
             </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Notes Dialog */}
+      <Dialog open={isNotesOpen} onOpenChange={setIsNotesOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MessageSquare className="h-5 w-5 text-primary" />
+              Notes : {appointment.client.fullName}
+            </DialogTitle>
+            <DialogDescription>
+              Ajoutez des détails sur la prestation (teinte, préférences, etc.)
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Écrivez vos notes ici..."
+              className="min-h-[150px] focus-visible:ring-primary text-base"
+            />
+          </div>
+          <DialogFooter className="flex flex-row gap-2 mt-4">
+            <Button variant="outline" onClick={() => setIsNotesOpen(false)} className="flex-1">Annuler</Button>
+            <Button onClick={handleSaveNotes} className="bg-primary hover:bg-primary/90 flex-1">
+              <Save className="h-4 w-4 mr-2" />
+              Enregistrer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -144,25 +232,24 @@ export default function MySchedule() {
     return () => clearInterval(interval);
   }, []);
 
-  const updateStatus = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const res = await apiRequest('PATCH', `/api/appointments/${id}/status`, { status });
+  const updateAppointment = useMutation({
+    mutationFn: async ({ id, status, notes }: { id: string; status?: string; notes?: string }) => {
+      const res = await apiRequest('PATCH', `/api/appointments/${id}`, { status, notes });
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/appointments'] });
-      toast({ title: 'Succès', description: 'Statut mis à jour' });
+      toast({ title: 'Succès', description: 'Rendez-vous mis à jour' });
     },
     onError: () => {
       toast({
         title: 'Erreur',
-        description: 'Impossible de mettre à jour le statut',
+        description: 'Impossible de mettre à jour le rendez-vous',
         variant: 'destructive',
       });
     },
   });
 
-  // Filter appointments for selected date and current user
   const dayAppointments = appointments
     .filter((apt) => {
       const aptDate = new Date(apt.startTime);
@@ -174,7 +261,6 @@ export default function MySchedule() {
     })
     .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
 
-  // Navigate to previous/next day
   const goToPreviousDay = () => {
     const prev = new Date(selectedDate);
     prev.setDate(prev.getDate() - 1);
@@ -193,7 +279,6 @@ export default function MySchedule() {
 
   const isToday = selectedDate.toDateString() === now.toDateString();
 
-  // Count by status
   const stats = {
     total: dayAppointments.length,
     pending: dayAppointments.filter((a) => a.status === 'pending').length,
@@ -230,9 +315,8 @@ export default function MySchedule() {
   }
 
   return (
-    <Layout title="Mon Planning">
+    <Layout title="Mon Planning (V2)">
       <div className="p-4 lg:p-6">
-        {/* Date navigation */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-2">
             <Button size="icon" variant="outline" onClick={goToPreviousDay}>
@@ -247,7 +331,7 @@ export default function MySchedule() {
                 })}
               </h2>
               {!isToday && (
-                <Button variant="link" size="sm" onClick={goToToday} className="p-0 h-auto">
+                <Button variant="ghost" size="sm" onClick={goToToday} className="p-0 h-auto text-primary hover:bg-transparent hover:underline">
                   Retour à aujourd'hui
                 </Button>
               )}
@@ -257,7 +341,6 @@ export default function MySchedule() {
             </Button>
           </div>
 
-          {/* Stats */}
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1">
               <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -276,7 +359,6 @@ export default function MySchedule() {
           </div>
         </div>
 
-        {/* Appointments list */}
         {dayAppointments.length === 0 ? (
           <Card className="p-12">
             <div className="text-center">
@@ -294,9 +376,6 @@ export default function MySchedule() {
         ) : (
           <div className="space-y-4">
             {dayAppointments.map((appointment) => {
-              const aptStart = new Date(appointment.startTime);
-              const aptEnd = new Date(appointment.endTime);
-              // Show buttons if status is pending or confirmed (regardless of time)
               const isCurrentOrUpcoming =
                 appointment.status === 'pending' || appointment.status === 'confirmed';
 
@@ -306,10 +385,13 @@ export default function MySchedule() {
                   appointment={appointment}
                   isCurrentOrUpcoming={isCurrentOrUpcoming}
                   onComplete={() =>
-                    updateStatus.mutate({ id: appointment.id, status: 'completed' })
+                    updateAppointment.mutate({ id: appointment.id, status: 'completed' })
                   }
                   onCancel={() =>
-                    updateStatus.mutate({ id: appointment.id, status: 'cancelled' })
+                    updateAppointment.mutate({ id: appointment.id, status: 'cancelled' })
+                  }
+                  onUpdateNotes={(notes) =>
+                    updateAppointment.mutate({ id: appointment.id, notes })
                   }
                 />
               );
@@ -317,7 +399,6 @@ export default function MySchedule() {
           </div>
         )}
 
-        {/* Timeline indicator for today */}
         {isToday && dayAppointments.length > 0 && (
           <div className="mt-6 text-center">
             <p className="text-sm text-muted-foreground">

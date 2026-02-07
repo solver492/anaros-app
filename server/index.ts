@@ -73,8 +73,8 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // Détection robuste du mode production pour Hostinger
-  const isProduction = process.env.NODE_ENV === "production" || fs.existsSync(path.resolve(process.cwd(), "dist", "public"));
+  // Détection stricte du mode production
+  const isProduction = process.env.NODE_ENV === "production";
 
   if (isProduction) {
     serveStatic(app);
