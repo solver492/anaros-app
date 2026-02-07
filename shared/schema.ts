@@ -1,4 +1,4 @@
-import { pgTable, text, varchar, integer, timestamp, uuid, primaryKey } from "drizzle-orm/pg-core";
+import { sqliteTable, text, integer, primaryKey } from "drizzle-orm/sqlite-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -7,15 +7,15 @@ export type UserRole = 'superadmin' | 'admin' | 'reception' | 'staff';
 export type AppointmentStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled';
 
 // Profiles table (users/employees)
-export const profiles = pgTable("profiles", {
-  id: varchar("id", { length: 36 }).primaryKey(),
+export const profiles = sqliteTable("profiles", {
+  id: text("id").primaryKey(), // UUID string
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
   role: text("role").$type<UserRole>().notNull().default('staff'),
   colorCode: text("color_code").default('#3B82F6'),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: text("created_at").default("CURRENT_TIMESTAMP"),
 });
 
 export const insertProfileSchema = createInsertSchema(profiles).omit({
@@ -27,8 +27,8 @@ export type InsertProfile = z.infer<typeof insertProfileSchema>;
 export type Profile = typeof profiles.$inferSelect;
 
 // Service categories table
-export const serviceCategories = pgTable("services_categories", {
-  id: integer("id").primaryKey(),
+export const serviceCategories = sqliteTable("services_categories", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull().unique(),
 });
 
@@ -40,13 +40,13 @@ export type InsertServiceCategory = z.infer<typeof insertServiceCategorySchema>;
 export type ServiceCategory = typeof serviceCategories.$inferSelect;
 
 // Services table (catalog)
-export const services = pgTable("services", {
-  id: varchar("id", { length: 36 }).primaryKey(),
+export const services = sqliteTable("services", {
+  id: text("id").primaryKey(),
   categoryId: integer("category_id").notNull(),
   name: text("name").notNull(),
   price: integer("price").notNull(), // Price in DA
   duration: integer("duration").notNull(), // Duration in minutes
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: text("created_at").default("CURRENT_TIMESTAMP"),
 });
 
 export const insertServiceSchema = createInsertSchema(services).omit({
@@ -58,8 +58,8 @@ export type InsertService = z.infer<typeof insertServiceSchema>;
 export type Service = typeof services.$inferSelect;
 
 // Staff skills table (linking employees to service categories)
-export const staffSkills = pgTable("staff_skills", {
-  profileId: varchar("profile_id", { length: 36 }).notNull(),
+export const staffSkills = sqliteTable("staff_skills", {
+  profileId: text("profile_id").notNull(),
   categoryId: integer("category_id").notNull(),
 }, (table) => ({
   pk: primaryKey({ columns: [table.profileId, table.categoryId] }),
@@ -71,13 +71,13 @@ export type InsertStaffSkill = z.infer<typeof insertStaffSkillSchema>;
 export type StaffSkill = typeof staffSkills.$inferSelect;
 
 // Clients table
-export const clients = pgTable("clients", {
-  id: varchar("id", { length: 36 }).primaryKey(),
+export const clients = sqliteTable("clients", {
+  id: text("id").primaryKey(),
   fullName: text("full_name").notNull(),
   phone: text("phone").notNull(),
   email: text("email"),
   notes: text("notes"),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: text("created_at").default("CURRENT_TIMESTAMP"),
 });
 
 export const insertClientSchema = createInsertSchema(clients).omit({
@@ -89,18 +89,21 @@ export type InsertClient = z.infer<typeof insertClientSchema>;
 export type Client = typeof clients.$inferSelect;
 
 // Appointments table
-export const appointments = pgTable("appointments", {
-  id: varchar("id", { length: 36 }).primaryKey(),
-  createdAt: timestamp("created_at").defaultNow(),
-  startTime: timestamp("start_time").notNull(),
-  endTime: timestamp("end_time").notNull(),
-  clientId: varchar("client_id", { length: 36 }).notNull(),
-  staffId: varchar("staff_id", { length: 36 }).notNull(),
-  serviceId: varchar("service_id", { length: 36 }).notNull(),
+export const appointments = sqliteTable("appointments", {
+  id: text("id").primaryKey(),
+  createdAt: text("created_at").default("CURRENT_TIMESTAMP"),
+  startTime: text("start_time").notNull(), // ISO Date String
+  endTime: text("end_time").notNull(), // ISO Date String
+  clientId: text("client_id").notNull(),
+  staffId: text("staff_id").notNull(),
+  serviceId: text("service_id").notNull(),
   status: text("status").$type<AppointmentStatus>().notNull().default('pending'),
 });
 
-export const insertAppointmentSchema = createInsertSchema(appointments).omit({
+export const insertAppointmentSchema = createInsertSchema(appointments, {
+  startTime: z.coerce.string(),
+  endTime: z.coerce.string(),
+}).omit({
   id: true,
   createdAt: true,
 });
@@ -171,18 +174,3 @@ export interface LoginCredentials {
   email: string;
   password: string;
 }
-
-// Legacy user table (keeping for compatibility)
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-});
-
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-});
-
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;

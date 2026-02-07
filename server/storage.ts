@@ -80,21 +80,30 @@ export interface IStorage {
 export class DatabaseStorage implements IStorage {
   // Auth
   async authenticateUser(email: string, password: string): Promise<AuthUser | null> {
-    const [user] = await db
-      .select()
-      .from(profiles)
-      .where(and(eq(profiles.email, email), eq(profiles.password, password)));
+    console.log(`[AUTH DEBUG] Tentative de connexion pour: ${email}`);
 
-    if (!user) return null;
+    try {
+      const [user] = await db
+        .select()
+        .from(profiles)
+        .where(and(eq(profiles.email, email), eq(profiles.password, password)));
 
-    return {
-      id: user.id,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      role: user.role,
-      colorCode: user.colorCode || '#3B82F6',
-    };
+      console.log(`[AUTH DEBUG] Résultat DB:`, user ? "Utilisateur trouvé" : "Utilisateur NON trouvé");
+
+      if (!user) return null;
+
+      return {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        colorCode: user.colorCode || '#3B82F6',
+      };
+    } catch (e) {
+      console.error(`[AUTH DEBUG] Erreur lors de la requête DB:`, e);
+      return null;
+    }
   }
 
   // Profiles
@@ -145,7 +154,7 @@ export class DatabaseStorage implements IStorage {
 
     const [newProfile] = await db
       .insert(profiles)
-      .values({ ...profileData, id })
+      .values({ ...profileData, id, role: profileData.role as any })
       .returning();
 
     if (skills && skills.length > 0) {
@@ -162,7 +171,7 @@ export class DatabaseStorage implements IStorage {
 
     const [updated] = await db
       .update(profiles)
-      .set(updates)
+      .set({ ...updates, role: updates.role as any })
       .where(eq(profiles.id, id))
       .returning();
 
@@ -331,10 +340,13 @@ export class DatabaseStorage implements IStorage {
     const [newApt] = await db
       .insert(appointments)
       .values({
-        ...data,
         id,
-        startTime: new Date(data.startTime),
-        endTime: new Date(data.endTime)
+        clientId: data.clientId,
+        staffId: data.staffId,
+        serviceId: data.serviceId,
+        startTime: new Date(data.startTime).toISOString(),
+        endTime: new Date(data.endTime).toISOString(),
+        status: (data.status as any) || 'pending'
       })
       .returning();
     return newApt;
@@ -415,12 +427,12 @@ export class DatabaseStorage implements IStorage {
     const apts = await db
       .select({
         staffId: appointments.staffId,
-        count: sql<number>`count(*)::int`,
-        revenue: sql<number>`sum(services.price)::int`,
+        count: sql<number>`CAST(count(*) AS INTEGER)`,
+        revenue: sql<number>`CAST(sum(services.price) AS INTEGER)`,
       })
       .from(appointments)
       .innerJoin(services, eq(appointments.serviceId, services.id))
-      .where(and(eq(appointments.status, 'completed'), gte(appointments.startTime, startOfMonth)))
+      .where(and(eq(appointments.status, 'completed'), gte(appointments.startTime, startOfMonth.toISOString())))
       .groupBy(appointments.staffId)
       .orderBy(desc(sql`sum(services.price)`))
       .limit(5);
@@ -449,12 +461,12 @@ export class DatabaseStorage implements IStorage {
     const stats = await db
       .select({
         serviceId: appointments.serviceId,
-        count: sql<number>`count(*)::int`,
-        revenue: sql<number>`sum(services.price)::int`,
+        count: sql<number>`CAST(count(*) AS INTEGER)`,
+        revenue: sql<number>`CAST(sum(services.price) AS INTEGER)`,
       })
       .from(appointments)
       .innerJoin(services, eq(appointments.serviceId, services.id))
-      .where(and(eq(appointments.status, 'completed'), gte(appointments.startTime, startOfMonth)))
+      .where(and(eq(appointments.status, 'completed'), gte(appointments.startTime, startOfMonth.toISOString())))
       .groupBy(appointments.serviceId)
       .orderBy(desc(sql`count(*)`))
       .limit(5);
@@ -483,12 +495,12 @@ export class DatabaseStorage implements IStorage {
     const [stats] = await db
       .select({
         clientId: appointments.clientId,
-        count: sql<number>`count(*)::int`,
-        revenue: sql<number>`sum(services.price)::int`,
+        count: sql<number>`CAST(count(*) AS INTEGER)`,
+        revenue: sql<number>`CAST(sum(services.price) AS INTEGER)`,
       })
       .from(appointments)
       .innerJoin(services, eq(appointments.serviceId, services.id))
-      .where(and(eq(appointments.status, 'completed'), gte(appointments.startTime, startOfMonth)))
+      .where(and(eq(appointments.status, 'completed'), gte(appointments.startTime, startOfMonth.toISOString())))
       .groupBy(appointments.clientId)
       .orderBy(desc(sql`sum(services.price)`))
       .limit(1);

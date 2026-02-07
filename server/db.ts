@@ -1,13 +1,15 @@
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import ws from 'ws';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
+import Database from 'better-sqlite3';
 import * as schema from '@shared/schema';
+import path from 'path';
 
-neonConfig.webSocketConstructor = ws;
+// Chemin vers le fichier SQLite local
+const sqlitePath = path.resolve(process.cwd(), 'data', 'sqlite.db');
 
-if (!process.env.DATABASE_URL) {
-    throw new Error("DATABASE_URL must be set. Please check your environment variables.");
-}
+// Initialisation de la base SQLite
+const sqlite = new Database(sqlitePath);
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-export const db = drizzle(pool, { schema });
+// Configuration de Drizzle avec SQLite
+export const db = drizzle(sqlite, { schema });
+
+console.log(`✅ Base de données SQLite initialisée à : ${sqlitePath}`);

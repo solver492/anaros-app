@@ -467,7 +467,7 @@ export default function CalendarPage() {
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentWithDetails | null>(null);
   const [showAppointmentDetails, setShowAppointmentDetails] = useState(false);
   const [view, setView] = useState<'month' | 'week' | 'day' | 'agenda'>('week');
-  const [selectedStaffIds, setSelectedStaffIds] = useState<Set<string>>(new Set());
+  const [selectedStaffIds, setSelectedStaffIds] = useState<Set<string> | null>(null);
   const [searchStaff, setSearchStaff] = useState('');
   const [showStaffDropdown, setShowStaffDropdown] = useState(false);
   const { toast } = useToast();
@@ -522,8 +522,9 @@ export default function CalendarPage() {
       return new Set([user.id]);
     }
 
-    // Si l'utilisateur est admin/superadmin/reception, afficher tous les RDV
-    if (selectedStaffIds.size === 0) {
+    // Si l'utilisateur est admin/superadmin/reception, afficher tous le personnel par défaut (null)
+    // Sinon, utiliser la sélection explicite (même si elle est vide)
+    if (selectedStaffIds === null) {
       return new Set(staff.map(s => s.id));
     }
     return selectedStaffIds;
@@ -531,7 +532,8 @@ export default function CalendarPage() {
 
   // Toggle staff selection
   const toggleStaff = (staffId: string) => {
-    const newSet = new Set(activeStaffIds);
+    const currentSet = selectedStaffIds || new Set(staff.map(s => s.id));
+    const newSet = new Set(currentSet);
     if (newSet.has(staffId)) {
       newSet.delete(staffId);
     } else {
@@ -542,11 +544,13 @@ export default function CalendarPage() {
 
   // Select/deselect all filtered staff
   const toggleAllStaff = () => {
-    if (filteredStaff.every(s => activeStaffIds.has(s.id))) {
-      // Deselect all
+    const allFilteredAreSelected = filteredStaff.length > 0 && filteredStaff.every(s => activeStaffIds.has(s.id));
+
+    if (allFilteredAreSelected) {
+      // Si tout est sélectionné, on vide tout (Désélectionner tout)
       setSelectedStaffIds(new Set());
     } else {
-      // Select all filtered
+      // Sinon, on sélectionne tout le personnel filtré (Sélectionner tout)
       setSelectedStaffIds(new Set(filteredStaff.map(s => s.id)));
     }
   };
@@ -639,7 +643,7 @@ export default function CalendarPage() {
                         onClick={toggleAllStaff}
                         className="w-full font-medium"
                       >
-                        {filteredStaff.every(s => activeStaffIds.has(s.id)) ? 'Désélectionner tout' : 'Sélectionner tout'}
+                        {filteredStaff.every(s => activeStaffIds.has(s.id)) && activeStaffIds.size > 0 ? 'Désélectionner tout' : 'Sélectionner tout'}
                       </Button>
                     </div>
 
