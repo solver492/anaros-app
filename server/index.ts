@@ -73,8 +73,8 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // Détection stricte du mode production
-  const isProduction = process.env.NODE_ENV === "production";
+  // Détection robuste du mode production (essentiel pour Ubuntu/Hostinger)
+  const isProduction = process.env.NODE_ENV === "production" || fs.existsSync(path.resolve(process.cwd(), "dist", "public"));
 
   if (isProduction) {
     serveStatic(app);
@@ -91,7 +91,6 @@ app.use((req, res, next) => {
   // ALWAYS serve the app on the port specified in the environment variable PORT
   // Other ports are firewalled. Default to 5000 if not specified.
   // this serves both the API and the client.
-  // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || "5000", 10);
   const host = "0.0.0.0"; // Toujours écouter sur toutes les interfaces en prod/hostinger
   httpServer.listen(
@@ -100,7 +99,7 @@ app.use((req, res, next) => {
       host,
     },
     () => {
-      log(`serving on http://${host}:${port}`);
+      log(`serving on http://${host}:${port} (V3)`);
     },
   );
 })();

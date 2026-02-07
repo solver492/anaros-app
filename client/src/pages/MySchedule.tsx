@@ -315,9 +315,20 @@ export default function MySchedule() {
   }
 
   return (
-    <Layout title="Mon Planning (V2)">
+    <Layout title="Mon Planning (V3)">
       <div className="p-4 lg:p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Mon Planning (V3)</h1>
+            <p className="text-muted-foreground flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              {selectedDate.toLocaleDateString('fr-FR', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+              })}
+            </p>
+          </div>
           <div className="flex items-center gap-2">
             <Button size="icon" variant="outline" onClick={goToPreviousDay}>
               <ChevronLeft className="h-4 w-4" />
