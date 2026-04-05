@@ -503,15 +503,30 @@ export async function registerRoutes(
         colorCode: '#9F7AEA',
       });
 
-      // Créer les catégories de services par défaut si elles n'existent pas
+      // Collecter les catégories de compétences des employés
+      const requestedSkills = new Set<string>();
+      if (Array.isArray(employees)) {
+        for (const emp of employees) {
+          if (Array.isArray(emp.skills)) {
+            for (const s of emp.skills) requestedSkills.add(s);
+          }
+        }
+      }
+
+      // Catégories par défaut pour tout nouveau centre
       const defaultCategories = [
         'Coiffure', 'Esthétique', 'Manucure', 'Massage',
         'Maquillage', 'Soins du corps', 'Épilation', 'Onglerie'
       ];
 
+      // Récupérer les catégories existantes
       const existingCats = await db.select().from(serviceCategories);
-      if (existingCats.length === 0) {
-        for (const catName of defaultCategories) {
+      const existingNames = existingCats.map((c) => c.name.toLowerCase());
+
+      // Créer toutes les catégories demandées + les catégories par défaut si elles n'existent pas
+      const toCreate = [...new Set([...defaultCategories, ...Array.from(requestedSkills)])];
+      for (const catName of toCreate) {
+        if (!existingNames.includes(catName.toLowerCase())) {
           try {
             await db.insert(serviceCategories).values({ name: catName });
           } catch {
@@ -520,9 +535,13 @@ export async function registerRoutes(
         }
       }
 
-      // Récupérer toutes les catégories pour le mapping
+      // Récupérer toutes les catégories (incluant les nouvelles) pour le mapping
       const allCats = await db.select().from(serviceCategories);
-      const catMap = Object.fromEntries(allCats.map((c) => [c.name, c.id]));
+      // Mapping insensible à la casse
+      const catMap: Record<string, number> = {};
+      for (const c of allCats) {
+        catMap[c.name.toLowerCase()] = c.id;
+      }
 
       // Créer les profils employés
       const employeeColors = [
@@ -549,10 +568,10 @@ export async function registerRoutes(
               colorCode: employeeColors[i % employeeColors.length],
             });
 
-            // Assigner les compétences
+            // Assigner les compétences (matching insensible à la casse)
             if (Array.isArray(emp.skills)) {
               for (const skillName of emp.skills) {
-                const catId = catMap[skillName];
+                const catId = catMap[skillName.toLowerCase()];
                 if (catId) {
                   try {
                     await db.insert(staffSkills).values({ profileId: empId, categoryId: catId });
