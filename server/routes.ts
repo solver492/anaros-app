@@ -453,33 +453,24 @@ export async function registerRoutes(
         openingTime,
         closingTime,
         logoUrl,
+        serviceCategories: inputCategories, // [{name, services:[{name,price,duration}]}]
         employees,
       } = req.body;
 
-      // Validation basique
       if (!ownerEmail || !password || !centerName) {
         return res.status(400).json({ error: "Champs obligatoires manquants" });
       }
 
-      // Vérifier email unique
-      const existing = await db
-        .select()
-        .from(profiles)
-        .where(eq(profiles.email, ownerEmail.toLowerCase()))
-        .limit(1);
-
+      const existing = await db.select().from(profiles).where(eq(profiles.email, ownerEmail.toLowerCase())).limit(1);
       if (existing.length > 0) {
         return res.status(409).json({ error: "Cet email est déjà utilisé" });
       }
 
       const tenantId = randomUUID();
 
-      // Créer le tenant
       await db.insert(tenants).values({
         id: tenantId,
-        ownerFirstName,
-        ownerLastName,
-        ownerPhone,
+        ownerFirstName, ownerLastName, ownerPhone,
         ownerEmail: ownerEmail.toLowerCase(),
         centerName,
         centerDescription: centerDescription || null,
@@ -491,63 +482,64 @@ export async function registerRoutes(
         status: 'active',
       });
 
-      // Créer le profil superadmin (propriétaire)
-      const adminId = randomUUID();
       await db.insert(profiles).values({
-        id: adminId,
-        firstName: ownerFirstName,
-        lastName: ownerLastName,
-        email: ownerEmail.toLowerCase(),
-        password,
-        role: 'superadmin',
-        colorCode: '#9F7AEA',
+        id: randomUUID(),
+        firstName: ownerFirstName, lastName: ownerLastName,
+        email: ownerEmail.toLowerCase(), password,
+        role: 'superadmin', colorCode: '#9F7AEA',
       });
 
-      // Collecter les catégories de compétences des employés
-      const requestedSkills = new Set<string>();
-      if (Array.isArray(employees)) {
-        for (const emp of employees) {
-          if (Array.isArray(emp.skills)) {
-            for (const s of emp.skills) requestedSkills.add(s);
+      // ─── CRÉATION DES CATÉGORIES ET SERVICES ───────────────────────────────
+      // Map: serviceName (lowercase) -> { id, categoryId }
+      const serviceNameToId: Record<string, string> = {};
+      const catNameToId: Record<string, number> = {};
+
+      if (Array.isArray(inputCategories) && inputCategories.length > 0) {
+        for (const cat of inputCategories) {
+          if (!cat.name) continue;
+          // Créer ou récupérer la catégorie
+          let catId: number;
+          const existingCat = await db.select().from(serviceCategories)
+            .where(eq(serviceCategories.name, cat.name)).limit(1);
+          if (existingCat.length > 0) {
+            catId = existingCat[0].id;
+          } else {
+            const [newCat] = await db.insert(serviceCategories).values({ name: cat.name }).returning();
+            catId = newCat.id;
+          }
+          catNameToId[cat.name.toLowerCase()] = catId;
+
+          // Créer les services de cette catégorie
+          if (Array.isArray(cat.services)) {
+            for (const svc of cat.services) {
+              if (!svc.name || !svc.name.trim()) continue;
+              const svcId = randomUUID();
+              try {
+                await db.insert(services).values({
+                  id: svcId,
+                  categoryId: catId,
+                  name: svc.name.trim(),
+                  price: Number(svc.price) || 0,
+                  duration: Number(svc.duration) || 30,
+                });
+                serviceNameToId[svc.name.trim().toLowerCase()] = svcId;
+              } catch { /* ignore duplicate */ }
+            }
+          }
+        }
+      } else {
+        // Aucune catégorie fournie : créer les catégories par défaut si elles n'existent pas
+        const defaults = ['Onglerie','Manucure','Pédicure','Hammam','Massage','Soins du visage','Coiffure','Maquillage','Épilation'];
+        for (const name of defaults) {
+          const existing = await db.select().from(serviceCategories).where(eq(serviceCategories.name, name)).limit(1);
+          if (existing.length === 0) {
+            try { await db.insert(serviceCategories).values({ name }); } catch {}
           }
         }
       }
 
-      // Catégories par défaut pour tout nouveau centre
-      const defaultCategories = [
-        'Coiffure', 'Esthétique', 'Manucure', 'Massage',
-        'Maquillage', 'Soins du corps', 'Épilation', 'Onglerie'
-      ];
-
-      // Récupérer les catégories existantes
-      const existingCats = await db.select().from(serviceCategories);
-      const existingNames = existingCats.map((c) => c.name.toLowerCase());
-
-      // Créer toutes les catégories demandées + les catégories par défaut si elles n'existent pas
-      const toCreate = [...new Set([...defaultCategories, ...Array.from(requestedSkills)])];
-      for (const catName of toCreate) {
-        if (!existingNames.includes(catName.toLowerCase())) {
-          try {
-            await db.insert(serviceCategories).values({ name: catName });
-          } catch {
-            // Ignore duplicate
-          }
-        }
-      }
-
-      // Récupérer toutes les catégories (incluant les nouvelles) pour le mapping
-      const allCats = await db.select().from(serviceCategories);
-      // Mapping insensible à la casse
-      const catMap: Record<string, number> = {};
-      for (const c of allCats) {
-        catMap[c.name.toLowerCase()] = c.id;
-      }
-
-      // Créer les profils employés
-      const employeeColors = [
-        '#F87171', '#34D399', '#60A5FA', '#FBBF24',
-        '#A78BFA', '#F472B6', '#2DD4BF', '#FB923C',
-      ];
+      // ─── CRÉATION DES EMPLOYÉS ───────────────────────────────────────────────
+      const employeeColors = ['#F87171','#34D399','#60A5FA','#FBBF24','#A78BFA','#F472B6','#2DD4BF','#FB923C'];
 
       if (Array.isArray(employees)) {
         for (let i = 0; i < employees.length; i++) {
@@ -555,7 +547,9 @@ export async function registerRoutes(
           if (!emp.firstName || !emp.lastName) continue;
 
           const empId = randomUUID();
-          const empEmail = `${emp.firstName.toLowerCase()}.${emp.lastName.toLowerCase()}${i}@${centerName.toLowerCase().replace(/\s+/g, '')}.local`;
+          // Mot de passe auto: prenom123
+          const empPassword = emp.password || (emp.firstName.toLowerCase().trim() + '123');
+          const empEmail = `${emp.firstName.toLowerCase().replace(/\s+/g,'')}.${emp.lastName.toLowerCase().replace(/\s+/g,'')}${i}@${centerName.toLowerCase().replace(/\s+/g,'')}.local`;
 
           try {
             await db.insert(profiles).values({
@@ -563,27 +557,32 @@ export async function registerRoutes(
               firstName: emp.firstName,
               lastName: emp.lastName,
               email: empEmail,
-              password: 'changeme123',
+              password: empPassword,
               role: emp.profession === 'Réceptionniste' ? 'reception' : 'staff',
               colorCode: employeeColors[i % employeeColors.length],
             });
 
-            // Assigner les compétences (matching insensible à la casse)
-            if (Array.isArray(emp.skills)) {
-              for (const skillName of emp.skills) {
-                const catId = catMap[skillName.toLowerCase()];
-                if (catId) {
-                  try {
-                    await db.insert(staffSkills).values({ profileId: empId, categoryId: catId });
-                  } catch {
-                    // Ignore
-                  }
+            // Assigner les services via staff_skills (on utilise les categoryIds)
+            const assignedCategoryIds = new Set<number>();
+
+            // Si des noms de services sont fournis, on récupère leurs catégories
+            if (Array.isArray(emp.serviceNames) && emp.serviceNames.length > 0) {
+              for (const svcName of emp.serviceNames) {
+                const svcId = serviceNameToId[svcName.toLowerCase()];
+                if (svcId) {
+                  // Récupérer la catégorie du service
+                  const [svcRow] = await db.select().from(services).where(eq(services.id, svcId)).limit(1);
+                  if (svcRow) assignedCategoryIds.add(svcRow.categoryId);
                 }
               }
             }
-          } catch {
-            // Ignore duplicate email errors
-          }
+
+            for (const catId of assignedCategoryIds) {
+              try {
+                await db.insert(staffSkills).values({ profileId: empId, categoryId: catId });
+              } catch { /* ignore duplicate */ }
+            }
+          } catch { /* ignore */ }
         }
       }
 
