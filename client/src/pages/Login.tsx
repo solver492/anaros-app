@@ -4,12 +4,14 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTenant } from '@/contexts/TenantContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Sparkles, Eye, EyeOff } from 'lucide-react';
+import { RegisterModal } from '@/components/RegisterModal';
+import { Loader2, Sparkles, Eye, EyeOff, UserPlus } from 'lucide-react';
 
 const loginSchema = z.object({
   email: z.string().email('Email invalide'),
@@ -24,6 +26,8 @@ export default function Login() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showRegister, setShowRegister] = useState(false);
+  const tenant = useTenant();
 
   const form = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -104,10 +108,14 @@ export default function Login() {
           {/* Header */}
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-white/30 backdrop-blur-md mb-4 border border-white/50 overflow-hidden">
-              <img src="/logo.jpg" alt="Anaros Logo" className="w-full h-full object-cover rounded-lg" />
+              {tenant.logoUrl ? (
+                <img src={tenant.logoUrl} alt={`${tenant.centerName} Logo`} className="w-full h-full object-cover rounded-lg" />
+              ) : (
+                <img src="/logo.jpg" alt="Logo" className="w-full h-full object-cover rounded-lg" />
+              )}
             </div>
-            <h1 className="text-4xl font-bold text-white mb-2">Anaros</h1>
-            <p className="text-white/80 text-sm">Centre de Beauté - Gestion</p>
+            <h1 className="text-4xl font-bold text-white mb-2">{tenant.centerName}</h1>
+            <p className="text-white/80 text-sm">{tenant.centerDescription || 'Centre de Beauté - Gestion'}</p>
           </div>
 
           {/* Form */}
@@ -189,14 +197,25 @@ export default function Login() {
             </form>
           </Form>
 
-          {/* Footer */}
+          {/* Footer — Créer un compte */}
           <div className="mt-6 pt-6 border-t border-white/20">
-            <p className="text-center text-white/70 text-xs">
-              Demo: admin@anaros.com / admin123
+            <p className="text-center text-white/60 text-xs mb-3">
+              Vous n&apos;avez pas encore de compte ?
             </p>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setShowRegister(true)}
+              className="w-full text-white/80 hover:text-white hover:bg-white/10 border border-white/20 text-sm"
+            >
+              <UserPlus className="mr-2 h-4 w-4" />
+              Créer un compte centre de beauté
+            </Button>
           </div>
         </div>
       </div>
+
+      <RegisterModal open={showRegister} onOpenChange={setShowRegister} />
 
       {/* CSS Animations */}
       <style>{`
