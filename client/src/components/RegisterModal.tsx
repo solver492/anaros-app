@@ -104,10 +104,21 @@ const DEFAULT_CATALOG: Record<string, Array<{ name: string; price: number; durat
 
 const CATEGORY_NAMES = Object.keys(DEFAULT_CATALOG);
 
-const PROFESSIONS = [
-  'Coiffeuse', 'Esthéticienne', 'Ongliste', 'Masseuse',
-  'Maquilleuse', 'Réceptionniste', 'Directrice / Manager', 'Autre',
-];
+// Mapping catégorie → profession
+const CATEGORY_TO_PROFESSION: Record<string, string> = {
+  'Onglerie': 'Ongliste',
+  'Manucure': 'Manucuriste',
+  'Pédicure': 'Pédicuriste',
+  'Hammam': 'Préposée Hammam',
+  'Massage': 'Masseuse',
+  'Soins du visage': 'Esthéticienne',
+  'Coiffure': 'Coiffeuse',
+  'Maquillage': 'Maquilleuse',
+  'Épilation': 'Spécialiste épilation',
+};
+
+// Professions fixes toujours disponibles
+const FIXED_PROFESSIONS = ['Réceptionniste', 'Directrice / Manager', 'Autre'];
 
 const CURRENCIES = [
   { value: 'DA', label: 'Dinar Algérien (DA)' },
@@ -293,10 +304,18 @@ export function RegisterModal({ open, onOpenChange }: { open: boolean; onOpenCha
     }));
   };
 
-  // All available prestations for step 4 assignment
-  const allPrestations = categories
-    .filter(c => c.checked)
-    .flatMap(c => c.prestations.map(p => ({ catName: c.name, ...p })));
+  // Professions dynamiques : dérivées des catégories cochées + fixes
+  const dynamicProfessions = [
+    ...categories.filter(c => c.checked).map(c => CATEGORY_TO_PROFESSION[c.name]).filter(Boolean),
+    ...FIXED_PROFESSIONS,
+  ];
+
+  // All available prestations for step 4 assignment (grouped by category)
+  const allPrestationsByCategory = categories
+    .filter(c => c.checked && c.prestations.length > 0)
+    .map(c => ({ catName: c.name, profession: CATEGORY_TO_PROFESSION[c.name] || c.name, prestations: c.prestations }));
+
+  const allPrestations = allPrestationsByCategory.flatMap(c => c.prestations.map(p => ({ catName: c.name, ...p })));
 
   // Step 4 helpers
   const updateEmployee = (idx: number, emp: Employee) => {
@@ -575,27 +594,46 @@ export function RegisterModal({ open, onOpenChange }: { open: boolean; onOpenCha
 
                     <div className="space-y-1">
                       <Label className="text-white/80 text-xs">Profession</Label>
-                      <Select value={emp.profession} onValueChange={v => updateEmployee(idx, { ...emp, profession: v })}>
+                      <Select value={emp.profession} onValueChange={v => {
+                        // Quand on change de profession, on réinitialise les services
+                        // et on pré-sélectionne les prestations de la catégorie correspondante
+                        const matchingCat = Object.entries(CATEGORY_TO_PROFESSION)
+                          .find(([, prof]) => prof === v)?.[0];
+                        const defaultServices = matchingCat
+                          ? (allPrestationsByCategory.find(c => c.catName === matchingCat)?.prestations.map(p => p.name) || [])
+                          : [];
+                        updateEmployee(idx, { ...emp, profession: v, serviceNames: defaultServices });
+                      }}>
                         <SelectTrigger className="bg-white/20 border-white/30 text-white text-sm"><SelectValue placeholder="Choisir..." /></SelectTrigger>
-                        <SelectContent>{PROFESSIONS.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+                        <SelectContent>
+                          {dynamicProfessions.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                        </SelectContent>
                       </Select>
                     </div>
 
                     {allPrestations.length > 0 && (
                       <div className="space-y-2">
                         <Label className="text-white/80 text-xs">Prestations assignées</Label>
-                        <div className="grid grid-cols-2 gap-1 max-h-32 overflow-y-auto">
-                          {allPrestations.map(svc => (
-                            <div key={svc.name} className="flex items-center gap-2">
-                              <Checkbox
-                                id={`emp-${idx}-${svc.name}`}
-                                checked={emp.serviceNames.includes(svc.name)}
-                                onCheckedChange={() => toggleEmployeeService(idx, svc.name)}
-                                className="border-white/40 data-[state=checked]:bg-white/30 flex-shrink-0"
-                              />
-                              <label htmlFor={`emp-${idx}-${svc.name}`} className="text-white/80 text-xs cursor-pointer leading-tight">
-                                {svc.name}
-                              </label>
+                        {/* Afficher par catégorie */}
+                        <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                          {allPrestationsByCategory.map(cat => (
+                            <div key={cat.catName}>
+                              <p className="text-white/50 text-xs font-medium mb-1 uppercase tracking-wide">{cat.catName}</p>
+                              <div className="grid grid-cols-2 gap-1 pl-2">
+                                {cat.prestations.map(svc => (
+                                  <div key={svc.name} className="flex items-center gap-2">
+                                    <Checkbox
+                                      id={`emp-${idx}-${svc.name}`}
+                                      checked={emp.serviceNames.includes(svc.name)}
+                                      onCheckedChange={() => toggleEmployeeService(idx, svc.name)}
+                                      className="border-white/40 data-[state=checked]:bg-white/30 flex-shrink-0"
+                                    />
+                                    <label htmlFor={`emp-${idx}-${svc.name}`} className="text-white/80 text-xs cursor-pointer leading-tight">
+                                      {svc.name}
+                                    </label>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
                           ))}
                         </div>
