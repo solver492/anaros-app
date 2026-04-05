@@ -161,6 +161,34 @@ export interface GoldenClient {
   appointmentsCount: number;
 }
 
+// Tenant (centre de beauté) table
+export const tenants = sqliteTable("tenants", {
+  id: text("id").primaryKey(), // UUID
+  // Infos propriétaire
+  ownerFirstName: text("owner_first_name").notNull(),
+  ownerLastName: text("owner_last_name").notNull(),
+  ownerPhone: text("owner_phone").notNull(),
+  ownerEmail: text("owner_email").notNull().unique(),
+  // Infos centre
+  centerName: text("center_name").notNull(),
+  centerDescription: text("center_description"),
+  currency: text("currency").notNull().default('DA'),
+  locale: text("locale").notNull().default('fr-DZ'),
+  openingTime: text("opening_time").notNull().default('09:00'),
+  closingTime: text("closing_time").notNull().default('20:00'),
+  logoUrl: text("logo_url"),
+  status: text("status").notNull().default('active'),
+  createdAt: text("created_at").default("CURRENT_TIMESTAMP"),
+});
+
+export const insertTenantSchema = createInsertSchema(tenants).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertTenant = z.infer<typeof insertTenantSchema>;
+export type Tenant = typeof tenants.$inferSelect;
+
 // Auth types
 export interface AuthUser {
   id: string;

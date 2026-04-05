@@ -2,6 +2,10 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertProfileSchema, insertServiceSchema, insertClientSchema, insertAppointmentSchema } from "@shared/schema";
+import { db } from "./db";
+import { tenants, profiles, serviceCategories, staffSkills } from "@shared/schema";
+import { eq, desc } from "drizzle-orm";
+import { randomUUID } from "crypto";
 import { z } from "zod";
 
 export async function registerRoutes(
@@ -392,6 +396,187 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Get golden client error:", error);
       res.status(500).json({ error: "Erreur serveur" });
+    }
+  });
+
+  // ===== TENANTS / CONFIG ROUTES =====
+
+  // GET config du tenant actif (premier tenant actif)
+  app.get("/api/tenants/config", async (req: Request, res: Response) => {
+    try {
+      const [tenant] = await db
+        .select()
+        .from(tenants)
+        .where(eq(tenants.status, 'active'))
+        .limit(1);
+
+      if (!tenant) {
+        // Retourne la config par défaut si aucun tenant
+        return res.json({
+          centerName: 'Anaros',
+          centerDescription: 'Centre de Beauté - Gestion',
+          currency: 'DA',
+          locale: 'fr-DZ',
+          openingTime: '09:00',
+          closingTime: '20:00',
+          logoUrl: null,
+        });
+      }
+
+      res.json({
+        centerName: tenant.centerName,
+        centerDescription: tenant.centerDescription,
+        currency: tenant.currency,
+        locale: tenant.locale,
+        openingTime: tenant.openingTime,
+        closingTime: tenant.closingTime,
+        logoUrl: tenant.logoUrl,
+      });
+    } catch (error) {
+      console.error("Get tenant config error:", error);
+      res.status(500).json({ error: "Erreur serveur" });
+    }
+  });
+
+  // POST inscription nouveau centre de beauté
+  app.post("/api/tenants/register", async (req: Request, res: Response) => {
+    try {
+      const {
+        ownerFirstName,
+        ownerLastName,
+        ownerPhone,
+        ownerEmail,
+        password,
+        centerName,
+        centerDescription,
+        currency,
+        openingTime,
+        closingTime,
+        logoUrl,
+        employees,
+      } = req.body;
+
+      // Validation basique
+      if (!ownerEmail || !password || !centerName) {
+        return res.status(400).json({ error: "Champs obligatoires manquants" });
+      }
+
+      // Vérifier email unique
+      const existing = await db
+        .select()
+        .from(profiles)
+        .where(eq(profiles.email, ownerEmail.toLowerCase()))
+        .limit(1);
+
+      if (existing.length > 0) {
+        return res.status(409).json({ error: "Cet email est déjà utilisé" });
+      }
+
+      const tenantId = randomUUID();
+
+      // Créer le tenant
+      await db.insert(tenants).values({
+        id: tenantId,
+        ownerFirstName,
+        ownerLastName,
+        ownerPhone,
+        ownerEmail: ownerEmail.toLowerCase(),
+        centerName,
+        centerDescription: centerDescription || null,
+        currency: currency || 'DA',
+        locale: currency === 'MAD' ? 'fr-MA' : currency === 'EUR' ? 'fr-FR' : currency === 'USD' ? 'en-US' : currency === 'TND' ? 'fr-TN' : 'fr-DZ',
+        openingTime: openingTime || '09:00',
+        closingTime: closingTime || '20:00',
+        logoUrl: logoUrl || null,
+        status: 'active',
+      });
+
+      // Créer le profil superadmin (propriétaire)
+      const adminId = randomUUID();
+      await db.insert(profiles).values({
+        id: adminId,
+        firstName: ownerFirstName,
+        lastName: ownerLastName,
+        email: ownerEmail.toLowerCase(),
+        password,
+        role: 'superadmin',
+        colorCode: '#9F7AEA',
+      });
+
+      // Créer les catégories de services par défaut si elles n'existent pas
+      const defaultCategories = [
+        'Coiffure', 'Esthétique', 'Manucure', 'Massage',
+        'Maquillage', 'Soins du corps', 'Épilation', 'Onglerie'
+      ];
+
+      const existingCats = await db.select().from(serviceCategories);
+      if (existingCats.length === 0) {
+        for (const catName of defaultCategories) {
+          try {
+            await db.insert(serviceCategories).values({ name: catName });
+          } catch {
+            // Ignore duplicate
+          }
+        }
+      }
+
+      // Récupérer toutes les catégories pour le mapping
+      const allCats = await db.select().from(serviceCategories);
+      const catMap = Object.fromEntries(allCats.map((c) => [c.name, c.id]));
+
+      // Créer les profils employés
+      const employeeColors = [
+        '#F87171', '#34D399', '#60A5FA', '#FBBF24',
+        '#A78BFA', '#F472B6', '#2DD4BF', '#FB923C',
+      ];
+
+      if (Array.isArray(employees)) {
+        for (let i = 0; i < employees.length; i++) {
+          const emp = employees[i];
+          if (!emp.firstName || !emp.lastName) continue;
+
+          const empId = randomUUID();
+          const empEmail = `${emp.firstName.toLowerCase()}.${emp.lastName.toLowerCase()}${i}@${centerName.toLowerCase().replace(/\s+/g, '')}.local`;
+
+          try {
+            await db.insert(profiles).values({
+              id: empId,
+              firstName: emp.firstName,
+              lastName: emp.lastName,
+              email: empEmail,
+              password: 'changeme123',
+              role: emp.profession === 'Réceptionniste' ? 'reception' : 'staff',
+              colorCode: employeeColors[i % employeeColors.length],
+            });
+
+            // Assigner les compétences
+            if (Array.isArray(emp.skills)) {
+              for (const skillName of emp.skills) {
+                const catId = catMap[skillName];
+                if (catId) {
+                  try {
+                    await db.insert(staffSkills).values({ profileId: empId, categoryId: catId });
+                  } catch {
+                    // Ignore
+                  }
+                }
+              }
+            }
+          } catch {
+            // Ignore duplicate email errors
+          }
+        }
+      }
+
+      res.status(201).json({
+        success: true,
+        message: `Centre "${centerName}" créé avec succès`,
+        tenantId,
+        adminEmail: ownerEmail,
+      });
+    } catch (error) {
+      console.error("Register tenant error:", error);
+      res.status(500).json({ error: "Erreur lors de la création du compte" });
     }
   });
 
