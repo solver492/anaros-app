@@ -321,8 +321,7 @@ function UserFormModal({
                           ? 'border-primary bg-primary/5'
                           : 'border-border'
                       }`}
-                      onClick={() => toggleSkill(category.id)}
-                      data-testid={`skill-checkbox-${category.id}`}
+                      >                      data-testid={`skill-checkbox-${category.id}`}
                     >
                       <Checkbox
                         checked={watchSkills.includes(category.id)}
